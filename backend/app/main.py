@@ -1,7 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.database import Base, engine
 from app.routers import orders, items, box_types
+
+# Creates orders/order_items/box_types/profiles if they don't already exist
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="FitPortal API", version="0.1.0")
 

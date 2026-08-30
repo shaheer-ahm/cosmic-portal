@@ -1,40 +1,36 @@
 from fastapi import APIRouter, Depends, HTTPException
-from app import schemas
+from sqlalchemy.orm import Session
+
+from app import models, schemas
 from app.database import get_db
 
 router = APIRouter(prefix="/api/v1/orders", tags=["orders"])
 
-@router.get("/")
-def list_orders(db=Depends(get_db)):
-    with db.cursor() as cursor:
-        cursor.execute("SELECT * FROM orders ORDER BY created_at DESC")
-        return cursor.fetchall()
+
+@router.get("/", response_model=list[schemas.OrderOut])
+def list_orders(db: Session = Depends(get_db)):
+    return db.query(models.Order).order_by(models.Order.created_at.desc()).all()
 
 
-@router.get("/{order_id}")
-def get_order(order_id: int, db=Depends(get_db)):
-    with db.cursor() as cursor:
-        cursor.execute("SELECT * FROM orders WHERE order_id = %s", (order_id,))
-        order = cursor.fetchone()
-        if not order:
-            raise HTTPException(status_code=404, detail=f"Order {order_id} not found")
-
-        cursor.execute("SELECT * FROM order_items WHERE order_id = %s", (order_id,))
-        order["items"] = cursor.fetchall()
+@router.get("/{order_id}", response_model=schemas.OrderWithItemsOut)
+def get_order(order_id: int, db: Session = Depends(get_db)):
+    order = db.query(models.Order).filter(models.Order.order_id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail=f"Order {order_id} not found")
     return order
 
 
-@router.post("/", status_code=201)
-def create_order(order: schemas.OrderCreate, db=Depends(get_db)):
-    with db.cursor() as cursor:
-        cursor.execute("INSERT INTO orders (status) VALUES ('draft')")
-        db.commit()
-        new_id = cursor.lastrowid
-        cursor.execute("SELECT * FROM orders WHERE order_id = %s", (new_id,))
-        return cursor.fetchone()
+@router.post("/", response_model=schemas.OrderOut, status_code=201)
+def create_order(order: schemas.OrderCreate, db: Session = Depends(get_db)):
+    db_order = models.Order(status="draft")
+    db.add(db_order)
+    db.commit()
+    db.refresh(db_order)
+    return db_order
 
 
-def _ensure_order_exists(cursor, order_id: int):
-    cursor.execute("SELECT 1 FROM orders WHERE order_id = %s", (order_id,))
-    if not cursor.fetchone():
+def _get_order_or_404(db: Session, order_id: int) -> models.Order:
+    order = db.query(models.Order).filter(models.Order.order_id == order_id).first()
+    if not order:
         raise HTTPException(status_code=404, detail=f"Order {order_id} not found")
+    return order
