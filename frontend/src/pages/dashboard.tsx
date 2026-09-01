@@ -143,7 +143,7 @@ export function DashboardPage() {
             </h2>
 
             <Link
-              to="/dashboard"
+              to="/orders"
               className="font-mono text-sm text-[#7b86ff]"
             >
               View all →
