@@ -14,6 +14,10 @@ export default function BottomNav() {
 
   const dashboardActive =
     location.pathname === "/dashboard";
+  const ordersActive = 
+    location.pathname.startsWith("/orders") && location.pathname !== "/orders/new";
+  const integrationActive = 
+    location.pathname === "/integration";
 
   return (
     <nav className="fixed bottom-0 left-1/2 z-50 flex w-full max-w-[520px] -translate-x-1/2 items-center justify-around border-t border-[#292c34] bg-[#181a20] px-4 py-3">
@@ -29,13 +33,18 @@ export default function BottomNav() {
         <span>Dashboard</span>
       </Link>
 
-      <button
-        type="button"
-        className="flex flex-col items-center gap-1 text-[11px] text-[#666a75]"
+      <Link
+        to="/orders"
+        className={`flex flex-col items-center gap-1 text-[11px] ${
+          ordersActive
+            ? "text-[#7180ff]"
+            : "text-[#666a75]"
+        }`}
+       
       >
         <ClipboardList className="h-6 w-6" />
         <span>Orders</span>
-      </button>
+      </Link>
 
       <Link
         to="/orders/new"
@@ -45,13 +54,17 @@ export default function BottomNav() {
         <Plus className="h-8 w-8" />
       </Link>
 
-      <button
-        type="button"
-        className="flex flex-col items-center gap-1 text-[11px] text-[#666a75]"
+      <Link
+        to="/integration"
+        className={`flex flex-col items-center gap-1 text-[11px] ${
+          integrationActive
+            ? "text-[#7180ff]"
+            : "text-[#666a75]"
+        }`}
       >
         <Zap className="h-6 w-6" />
         <span>Integr.</span>
-      </button>
+      </Link>
     </nav>
   );
 }
