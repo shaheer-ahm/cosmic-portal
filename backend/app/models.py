@@ -24,6 +24,7 @@ class OrderItem(Base):
     Width = Column(Integer, nullable=False)
     Length = Column(Integer, nullable=False)
     Depth = Column(Integer, nullable=False)
+    Weight = Column(Float, nullable=False)
     BoxGroup = Column(String(50), nullable=True)
     # Note: no Weight field yet
 

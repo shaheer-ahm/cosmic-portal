@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS order_items (
     "Width"         INT NOT NULL,
     "Length"        INT NOT NULL,
     "Depth"         INT NOT NULL,
+    "Weight"        DOUBLE PRECISION NOT NULL CHECK ("Weight" >= 0),
     "BoxGroup"      VARCHAR(50) NULL,
     -- Note: no Weight field yet
     PRIMARY KEY (order_id, "ItemCode"),

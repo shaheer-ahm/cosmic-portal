@@ -1,6 +1,6 @@
 from typing import Optional
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 class ItemBase(BaseModel):
     ItemCode: str
@@ -8,6 +8,7 @@ class ItemBase(BaseModel):
     Width: int
     Length: int
     Depth: int
+    Weight: float = Field(ge=0)
     BoxGroup: Optional[str] = None
 
 class ItemCreate(ItemBase):
