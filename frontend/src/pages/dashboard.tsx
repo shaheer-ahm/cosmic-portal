@@ -1,14 +1,16 @@
 import {
   CheckCircle2,
   ClipboardList,
+  LogOut,
   XCircle,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
 import { AppShell } from "../components/layout/AppShell";
-import { BrandHeader } from "../components/layout/BrandHeader";
 import { OrderCard } from "../components/orders/OrderCard";
 import { Card } from "../components/ui/Card";
+import { supabase } from "../lib/supabase";
 import type { StoredOrder } from "../types/domain";
 
 const emptyRequest = {
@@ -67,9 +69,89 @@ const recentOrders: StoredOrder[] = [
 ];
 
 export function DashboardPage() {
+  const navigate = useNavigate();
+
+  const [email, setEmail] = useState("");
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user?.email) {
+        setEmail(user.email);
+      }
+    };
+
+    loadUser();
+  }, []);
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      console.error("Logout failed:", error.message);
+      setLoggingOut(false);
+      return;
+    }
+
+    navigate("/auth", {
+      replace: true,
+    });
+  };
+
   return (
     <AppShell>
-      <BrandHeader title="Dashboard" />
+      {/* Dashboard header */}
+      <header className="border-b border-[#252934] px-5 py-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-[#6675ff] text-lg font-bold text-white">
+              CF
+            </div>
+
+            <div>
+              <p className="font-mono text-xs uppercase tracking-[0.25em] text-[#858bab]">
+                Cosmic Fit
+              </p>
+
+              <h1 className="mt-1 text-2xl font-bold text-white">
+                Dashboard
+              </h1>
+            </div>
+          </div>
+
+          <div className="flex min-w-0 flex-col items-end gap-2">
+            <div className="flex max-w-[190px] items-center gap-2 rounded-full border border-[#3a3e49] bg-[#22252d] px-3 py-2">
+              <span className="h-2 w-2 shrink-0 rounded-full bg-green-400" />
+
+              <span
+                className="truncate text-xs text-[#d7d9e2]"
+                title={email}
+              >
+                {email || "Loading..."}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleLogout}
+              disabled={loggingOut}
+              className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-[#8f95aa] transition hover:bg-[#252934] hover:text-red-300 disabled:opacity-50"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+
+              {loggingOut
+                ? "Logging out..."
+                : "Logout"}
+            </button>
+          </div>
+        </div>
+      </header>
 
       <main className="px-5 py-5">
         <p className="font-mono text-xs uppercase tracking-[0.2em] text-[#777d98]">
