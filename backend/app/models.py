@@ -1,6 +1,6 @@
 from datetime import datetime
 from sqlalchemy import Column, String, Integer, Float, Boolean, ForeignKey, DateTime
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -12,7 +12,10 @@ class Order(Base):
     order_id = Column(Integer, primary_key=True, autoincrement=True)
     status = Column(String(50), nullable=False, default="draft")
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
     items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
+    box_types = relationship("OrderBoxType", back_populates="order", cascade="all, delete-orphan")
+    result = relationship("OrderResult", back_populates="order", uselist=False, cascade="all, delete-orphan")
 
 
 class OrderItem(Base):
@@ -25,7 +28,9 @@ class OrderItem(Base):
     Length = Column(Integer, nullable=False)
     Depth = Column(Integer, nullable=False)
     BoxGroup = Column(String(50), nullable=True)
-    # Note: no Weight field yet
+    Weight = Column(Float, nullable=False)
+    Quantity = Column(Integer, nullable=True)
+    KeepUpright = Column(Boolean, nullable=True)
 
     order = relationship("Order", back_populates="items")
 
@@ -41,6 +46,33 @@ class BoxType(Base):
     BoxWeight = Column(Float, nullable=True)
     Active = Column(Boolean, nullable=False, default=True)
     MaximumBoxes = Column(Integer, nullable=True)
+
+
+class OrderBoxType(Base):
+    """
+    Association between an order and the box types that may be used to
+    pack it. Populated via POST /api/v1/orders/{order_id}/box-types.
+    """
+    __tablename__ = "order_box_types"
+
+    order_id = Column(Integer, ForeignKey("orders.order_id", ondelete="CASCADE"), primary_key=True)
+    Reference = Column(String(50), ForeignKey("box_types.Reference"), primary_key=True)
+
+    order = relationship("Order", back_populates="box_types")
+    box_type = relationship("BoxType")
+
+
+class OrderResult(Base):
+    """
+    Optimisation output for an order, produced by FitSolver.
+    """
+    __tablename__ = "order_results"
+
+    order_id = Column(Integer, ForeignKey("orders.order_id", ondelete="CASCADE"), primary_key=True)
+    result_data = Column(JSONB, nullable=False)
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+    order = relationship("Order", back_populates="result")
 
 
 class Profile(Base):

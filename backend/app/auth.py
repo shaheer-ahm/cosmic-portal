@@ -55,7 +55,9 @@ def get_current_user(
 
 def require_supervisor(user: dict = Depends(get_current_user)) -> dict:
     """
-    Use as a dependency on routes that only SUPERVISORs may access
+    Use as a dependency on routes that only SUPERVISORs may access.
+
+    NOTE: role enforcement is disabled in the API for now.
     """
     if user["role"] != "SUPERVISOR":
         raise HTTPException(
