@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
-
+from uuid import uuid4
+ 
 from app import models, schemas
 from app.database import get_db
 from app.solver_client import call_solver, SolverError
@@ -56,7 +57,14 @@ def set_order_box_types(
             detail=f"Unknown box type reference(s): {', '.join(sorted(missing))}",
         )
 
-    # Replace existing selection wholesale
+    inactive = [b.Reference for b in found if not b.Active]
+    if inactive:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Inactive box type(s) cannot be selected: {', '.join(sorted(inactive))}",
+        )
+
+    # Replace existing selection
     db.query(models.OrderBoxType).filter(models.OrderBoxType.order_id == order_id).delete()
     for ref in selection.references:
         db.add(models.OrderBoxType(order_id=order_id, Reference=ref))
@@ -65,6 +73,32 @@ def set_order_box_types(
 
     return _order_with_box_types(order)
 
+@router.get("/{order_id}/box-types", response_model=list[schemas.BoxTypeOut])
+def get_selected_box_types(order_id: int, db: Session = Depends(get_db)):
+    _get_order_or_404(db, order_id)
+    return (
+        db.query(models.BoxType)
+        .join(models.OrderBoxType, models.BoxType.Reference == models.OrderBoxType.Reference)
+        .filter(models.OrderBoxType.order_id == order_id)
+        .order_by(models.BoxType.Reference)
+        .all()
+    )
+
+@router.delete("/{order_id}/box-types/{reference}", status_code=204)
+def remove_selected_box_type(order_id: int, reference: str, db: Session = Depends(get_db)):
+    _get_order_or_404(db, order_id)
+    selection = (
+        db.query(models.OrderBoxType)
+        .filter(models.OrderBoxType.order_id == order_id, models.OrderBoxType.Reference == reference)
+        .first()
+    )
+    if not selection:
+        raise HTTPException(
+            status_code=404, detail=f"Box type '{reference}' is not selected for order {order_id}"
+        )
+    db.delete(selection)
+    db.commit()
+    return Response(status_code=204)
 
 # Validation
 
@@ -156,38 +190,41 @@ def optimise_order(
 
     NOTE: this should require the SUPERVISOR role. Role-based permission 
     is not implemented yet.
-
-    Calls FitSolver's POST /v1/pack synchronously. On success, the full response
-    (Boxes/UnpackedItems/Meta) is stored in order_results. 'Success' in the 
-    response reflects whether every item was packed; a false value still comes 
-    back as HTTP 200 with a partial result, not an error.
     """
     order = _get_order_or_404(db, order_id)
-
+ 
     if order.status != "validated":
         raise HTTPException(
             status_code=409,
             detail=f"Order must be validated before optimisation (current status: '{order.status}')",
         )
-
+ 
     items = db.query(models.OrderItem).filter(models.OrderItem.order_id == order_id).all()
     box_type_refs = [obt.Reference for obt in order.box_types]
     box_types = (
-        db.query(models.BoxType).filter(models.BoxType.Reference.in_(box_type_refs)).all()
+        db.query(models.BoxType)
+        .filter(models.BoxType.Reference.in_(box_type_refs), models.BoxType.Active.is_(True))
+        .all()
     )
 
+    if not box_types:
+        raise HTTPException(
+            status_code=400,
+            detail="None of this order's selected box types are currently active",
+        )
+ 
     order.status = "processing"
     db.commit()
-
+ 
     try:
-        result = call_solver(items, box_types)
+        result = call_solver(items, box_types, request_id=f"portal-order-{order_id}-{uuid4()}")
     except SolverError as exc:
         # Roll back to 'validated' so the order can be retried rather than
         # left stuck in 'processing'.
         order.status = "validated"
         db.commit()
         raise HTTPException(status_code=502, detail=f"FitSolver call failed: {exc}")
-
+ 
     existing_result = (
         db.query(models.OrderResult).filter(models.OrderResult.order_id == order_id).first()
     )
@@ -196,18 +233,18 @@ def optimise_order(
         existing_result.result_data = result_dict
     else:
         db.add(models.OrderResult(order_id=order_id, result_data=result_dict))
-
+ 
     order.status = "completed"
     db.commit()
-
+ 
     message = (
         "Optimisation completed successfully."
         if result.Success
         else f"Optimisation completed with {len(result.UnpackedItems)} item(s) unpacked."
     )
-
+ 
     return schemas.OptimiseResponse(order_id=order.order_id, status=order.status, message=message)
-
+ 
 
 # Helpers
 
@@ -217,8 +254,11 @@ def _get_order_or_404(db: Session, order_id: int) -> models.Order:
         raise HTTPException(status_code=404, detail=f"Order {order_id} not found")
     return order
 
-
 def _order_with_box_types(order: models.Order) -> schemas.OrderWithItemsOut:
-    resp = schemas.OrderWithItemsOut.model_validate(order)
-    resp.box_types = [obt.Reference for obt in order.box_types]
-    return resp
+    return schemas.OrderWithItemsOut(
+        order_id=order.order_id,
+        status=order.status,
+        created_at=order.created_at,
+        items=[schemas.ItemOut.model_validate(item) for item in order.items],
+        box_types=[obt.Reference for obt in order.box_types],
+    )

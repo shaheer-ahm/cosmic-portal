@@ -18,8 +18,8 @@ CREATE TABLE IF NOT EXISTS order_items (
     "Width"         INT NOT NULL,
     "Length"        INT NOT NULL,
     "Depth"         INT NOT NULL,
+    "Weight"        DOUBLE PRECISION NOT NULL CHECK ("Weight" >= 0),
     "BoxGroup"      VARCHAR(50) NULL,
-    "Weight"        FLOAT NOT NULL,
     "Quantity"      INT NULL,
     "KeepUpright"   BOOLEAN NULL,
     PRIMARY KEY (order_id, "ItemCode"),
@@ -39,9 +39,8 @@ CREATE TABLE IF NOT EXISTS box_types (
     "MaximumBoxes"  INT NULL
 );
 
--- Order <-> Box type selection
+-- Order box type selection
 -- Which box types are available for use when optimising a given order.
--- POST /api/v1/orders/{order_id}/box-types replaces this set.
 CREATE TABLE IF NOT EXISTS order_box_types (
     order_id        INT NOT NULL,
     "Reference"     VARCHAR(50) NOT NULL,

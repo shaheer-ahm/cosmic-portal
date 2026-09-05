@@ -1,6 +1,6 @@
 from typing import Optional
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ItemBase(BaseModel):
@@ -10,7 +10,7 @@ class ItemBase(BaseModel):
     Length: int
     Depth: int
     BoxGroup: Optional[str] = None
-    Weight: float
+    Weight: float = Field(ge=0)
     Quantity: Optional[int] = None
     KeepUpright: Optional[bool] = None
 
@@ -48,7 +48,6 @@ class BoxTypeBase(BaseModel):
 
 class BoxTypeOut(BoxTypeBase):
     model_config = ConfigDict(from_attributes=True)
-
 
 # Order box-type selection
 
@@ -225,3 +224,13 @@ class CurrentUserOut(BaseModel):
     user_id: str
     email: Optional[str] = None
     role: str
+    
+class OrderBoxTypeCreate(BaseModel):
+    box_reference: str
+
+
+class OrderBoxTypeResponse(BaseModel):
+    order_id: int
+    box_reference: str
+
+    model_config = ConfigDict(from_attributes = True)

@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, String, Integer, Float, Boolean, ForeignKey, DateTime
+from sqlalchemy import Column, String, Integer, Float, Boolean, ForeignKey, DateTime, CheckConstraint
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -32,6 +32,8 @@ class OrderItem(Base):
     Quantity = Column(Integer, nullable=True)
     KeepUpright = Column(Boolean, nullable=True)
 
+    __table_args__ = (CheckConstraint("\"Weight\" >= 0", name="order_items_weight_non_negative"),)
+
     order = relationship("Order", back_populates="items")
 
 
@@ -47,6 +49,7 @@ class BoxType(Base):
     Active = Column(Boolean, nullable=False, default=True)
     MaximumBoxes = Column(Integer, nullable=True)
 
+    order_selections = relationship("OrderBoxType", back_populates = "box_type")
 
 class OrderBoxType(Base):
     """

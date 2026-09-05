@@ -1,10 +1,10 @@
 import os
 import uuid
 from typing import Any, Optional
-
+ 
 import httpx
 from dotenv import load_dotenv
-
+ 
 from app import models, schemas
 
 load_dotenv()
@@ -57,7 +57,7 @@ def call_solver(
     request_id: Optional[str] = None,
 ) -> "schemas.SolverResult":
     """
-    Calls FitSolver's confirmed POST /v1/pack with the order's items and
+    Calls FitSolver's POST /v1/pack with the order's items and
     selected box types.
     
     Raises SolverError on network failure, timeout, non-200 response, 
@@ -75,8 +75,7 @@ def call_solver(
     }
 
     headers = {"Content-Type": "application/json"}
-    if SOLVER_API_KEY:
-        headers["X-API-Key"] = SOLVER_API_KEY
+    # TODO: headers["X-API-Key"] = SOLVER_API_KEY
 
     try:
         resp = httpx.post(
