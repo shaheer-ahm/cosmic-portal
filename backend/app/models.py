@@ -13,6 +13,7 @@ class Order(Base):
     status = Column(String(50), nullable=False, default="draft")
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
+    box_type_selections = relationship("OrderBoxType", back_populates = "order", cascade = "all, delete-orphan")
 
 
 class OrderItem(Base):
@@ -26,7 +27,6 @@ class OrderItem(Base):
     Depth = Column(Integer, nullable=False)
     Weight = Column(Float, nullable=False)
     BoxGroup = Column(String(50), nullable=True)
-    # Note: no Weight field yet
 
     order = relationship("Order", back_populates="items")
 
@@ -42,6 +42,18 @@ class BoxType(Base):
     BoxWeight = Column(Float, nullable=True)
     Active = Column(Boolean, nullable=False, default=True)
     MaximumBoxes = Column(Integer, nullable=True)
+
+    order_selections = relationship("OrderBoxType", back_populates = "box_type")
+
+
+class OrderBoxType(Base):
+    __tablename__ = "order_box_types"
+
+    order_id = Column(Integer, ForeignKey("orders.order_id", ondelete = "CASCADE"), primary_key = True)
+    box_reference = Column(String(50), ForeignKey("box_types.Reference", ondelete = "CASCADE"), primary_key = True)
+
+    order = relationship("Order", back_populates = "box_type_selections")
+    box_type = relationship("BoxType", back_populates = "order_selections")
 
 
 class Profile(Base):

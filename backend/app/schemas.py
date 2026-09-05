@@ -43,3 +43,14 @@ class BoxTypeBase(BaseModel):
 
 class BoxTypeOut(BoxTypeBase):
     model_config = ConfigDict(from_attributes=True)
+
+
+class OrderBoxTypeCreate(BaseModel):
+    box_reference: str
+
+
+class OrderBoxTypeResponse(BaseModel):
+    order_id: int
+    box_reference: str
+
+    model_config = ConfigDict(from_attributes = True)

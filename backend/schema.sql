@@ -38,6 +38,17 @@ CREATE TABLE IF NOT EXISTS box_types (
     "MaximumBoxes"  INT NULL
 );
 
+-- Order box types
+-- Box type selected for one order
+CREATE TABLE IF NOT EXISTS order_box_types (
+    orders_id       INT NOT NULL;
+    box_reference   VARCHAR(50) NOT NULL
+
+    PRIMARY KEY (order_id, box_reference),
+    FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE,
+    FOREIGN KEY (box_reference) REFERENCES box_types("Reference") ON DELETE CASCADE,
+)
+
 -- Profiles (roles)
 CREATE TABLE IF NOT EXISTS profiles (
     user_id     UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
