@@ -1,9 +1,14 @@
+import { MenuDrawer } from "./MenuDrawer";
+
 export function BrandHeader({ title }: { title: string }) {
   return (
     <header className="border-b border-[#242730] px-6 py-5">
       <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="grid h-12 w-12 place-items-center rounded-full bg-[#6675ff] text-sm font-bold text-white">
+          {/* Menu Drawer placed on the far left */}
+          <div className="flex items-center gap-3">
+          <MenuDrawer />
+
+          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#6675ff] text-sm font-bold text-white">
             CF
           </div>
 

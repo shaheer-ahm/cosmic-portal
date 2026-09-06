@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { AppShell } from "../components/layout/AppShell";
+import { MenuDrawer } from "../components/layout/MenuDrawer";
 import { OrderCard } from "../components/orders/OrderCard";
 import { Card } from "../components/ui/Card";
 import { supabase } from "../lib/supabase";
@@ -108,7 +109,8 @@ export function DashboardPage() {
     <AppShell>
       {/* Dashboard header */}
       <header className="border-b border-[#252934] px-5 py-5">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start justify-between gap-3">
+          <MenuDrawer />
           <div className="flex items-center gap-4">
             <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-[#6675ff] text-lg font-bold text-white">
               CF
