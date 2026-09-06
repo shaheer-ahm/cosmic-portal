@@ -1,24 +1,21 @@
 import os
 from dotenv import load_dotenv
-import pymysql
-from pymysql.cursors import DictCursor
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
 
 load_dotenv()
 
-DB_CONFIG = {
-    "host": os.getenv("DB_HOST"),
-    "port": int(os.getenv("DB_PORT")),
-    "user": os.getenv("DB_USER"),
-    "password": os.getenv("DB_PASSWORD"),
-    "database": os.getenv("DB_NAME"),
-    "cursorclass": DictCursor,
-    "autocommit": False,
-}
+DATABASE_URL = os.getenv("DATABASE_URL")
 
+# pool_pre_ping avoids stale-connection errors
+engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+Base = declarative_base()
 
 def get_db():
-    conn = pymysql.connect(**DB_CONFIG)
+    db = SessionLocal()
     try:
-        yield conn
+        yield db
     finally:
-        conn.close()
+        db.close()
