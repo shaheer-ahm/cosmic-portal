@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Globe, Activity, Eye, Database, RefreshCw } from 'lucide-react';
+import { apiFetch } from "../lib/api";
 
 // 1. Import AppShell from layout
 import { AppShell } from "../components/layout/AppShell";
@@ -15,13 +16,28 @@ export const Integration: React.FC = () => {
   const [baseUrl, setBaseUrl] = useState<string>('https://api.cosmicfit.io');
   const [version, setVersion] = useState<string>('v2.4.1');
   const [isChecking, setIsChecking] = useState<boolean>(false);
+  const [healthResult, setHealthResult] = useState("");
 
-  const handleHealthCheck = (): void => {
+  const handleHealthCheck = async (): Promise<void> => {
     setIsChecking(true);
-    setTimeout(() => {
+    setHealthResult("");
+
+    try {
+      const data = await apiFetch<{ status: string }>("/health");
+
+      setHealthResult(
+        data.status === "ok"
+          ? "Backend connected"
+          : "Unexpected backend response",
+      );
+    } catch (error) {
+      console.error(error);
+      setHealthResult("Backend connection failed");
+    } finally {
       setIsChecking(false);
-    }, 1200);
+    }
   };
+
 
   const services: ServiceItem[] = [
     { name: 'FitPortal API', latency: '42 ms', status: 'Connected', icon: Globe },
@@ -138,6 +154,11 @@ export const Integration: React.FC = () => {
                 <RefreshCw size={15} className={isChecking ? 'animate-spin text-indigo-400' : ''} />
                 {isChecking ? 'Running check...' : 'Health check'}
               </button>
+              {healthResult && (
+                <p className="text-center text-xs text-gray-400">
+                  {healthResult}
+                </p>
+              )}
             </div>
           </div>
         </div>

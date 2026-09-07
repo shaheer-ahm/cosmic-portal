@@ -1,174 +1,200 @@
 import {
+  Box,
   CheckCircle2,
+  ChevronRight,
   ClipboardList,
-  LogOut,
+  Package,
   XCircle,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+
+import { apiFetch } from "../lib/api";
 
 import { AppShell } from "../components/layout/AppShell";
-import { MenuDrawer } from "../components/layout/MenuDrawer";
-import { OrderCard } from "../components/orders/OrderCard";
+import { BrandHeader } from "../components/layout/BrandHeader";
 import { Card } from "../components/ui/Card";
-import { supabase } from "../lib/supabase";
-import type { StoredOrder } from "../types/domain";
+import StatusBadge from "../components/ui/statusBadge";
 
-const emptyRequest = {
-  items: [],
-  boxes: [],
-};
+interface RecentOrder {
+  order_id: number;
+  status: string;
+  created_at: string;
+}
 
-const recentOrders: StoredOrder[] = [
-  {
-    id: "ORD-2847",
-    orderRef: "ORD-2847",
-    status: "completed",
-    itemCount: 12,
-    boxCount: 3,
-    createdAt: "2026-08-17T09:42:00",
-    completedAt: "2026-08-17T09:42:01",
-    durationMs: 1340,
-    request: emptyRequest,
-  },
-  {
-    id: "ORD-2846",
-    orderRef: "ORD-2846",
-    status: "processing",
-    itemCount: 8,
-    boxCount: 2,
-    createdAt: "2026-08-17T09:15:00",
-    request: emptyRequest,
-  },
-  {
-    id: "ORD-2845",
-    orderRef: "ORD-2845",
-    status: "invalid",
-    itemCount: 5,
-    boxCount: 0,
-    createdAt: "2026-08-17T08:58:00",
-    request: emptyRequest,
-  },
-  {
-    id: "ORD-2844",
-    orderRef: "ORD-2844",
-    status: "completed",
-    itemCount: 24,
-    boxCount: 6,
-    createdAt: "2026-08-17T08:31:00",
-    request: emptyRequest,
-  },
-  {
-    id: "ORD-2843",
-    orderRef: "ORD-2843",
-    status: "completed",
-    itemCount: 16,
-    boxCount: 4,
-    createdAt: "2026-08-17T08:12:00",
-    request: emptyRequest,
-  },
-];
+interface DashboardSummary {
+  total_orders: number;
+  orders_by_status: Record<string, number>;
+  recent_orders: RecentOrder[];
+}
+
+interface RecentOrderDetails {
+  order_id: number;
+  status: string;
+  created_at: string;
+  items: unknown[];
+  box_types: string[];
+}
+
+interface DashboardOrder {
+  id: number;
+  reference: string;
+  status: string;
+  createdAt: string;
+  itemCount: number;
+  boxCount: number;
+}
 
 export function DashboardPage() {
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState("");
-  const [loggingOut, setLoggingOut] = useState(false);
+  const [summary, setSummary] =
+    useState<DashboardSummary | null>(null);
+
+  const [recentOrders, setRecentOrders] =
+    useState<DashboardOrder[]>([]);
+
+  const [loading, setLoading] = useState(true);
+
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const loadUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+    const loadDashboard = async () => {
+      try {
+        setLoading(true);
+        setError("");
 
-      if (user?.email) {
-        setEmail(user.email);
+        // 1. Load dashboard summary
+        const data =
+          await apiFetch<DashboardSummary>(
+            "/dashboard/summary",
+          );
+
+        setSummary(data);
+
+        // 2. Load details for recent orders
+        const detailedOrders =
+          await Promise.all(
+            data.recent_orders.map(
+              async (order) => {
+                const details =
+                  await apiFetch<RecentOrderDetails>(
+                    `/orders/${order.order_id}`,
+                  );
+
+                return {
+                  id: order.order_id,
+                  reference: `ORD-${order.order_id}`,
+                  status:
+                    order.status
+                      .charAt(0)
+                      .toUpperCase() +
+                    order.status.slice(1),
+                  createdAt: order.created_at,
+                  itemCount:
+                    details.items.length,
+                  boxCount:
+                    details.box_types.length,
+                };
+              },
+            ),
+          );
+
+        setRecentOrders(detailedOrders);
+      } catch (err) {
+        console.error(
+          "Failed to load dashboard:",
+          err,
+        );
+
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Failed to load dashboard.",
+        );
+      } finally {
+        setLoading(false);
       }
     };
 
-    loadUser();
+    loadDashboard();
   }, []);
 
-  const handleLogout = async () => {
-    setLoggingOut(true);
+  if (loading) {
+    return (
+      <AppShell>
+        <BrandHeader title="Dashboard" />
 
-    const { error } = await supabase.auth.signOut();
+        <main className="px-5 py-10 text-center text-sm text-[#777d92]">
+          Loading dashboard...
+        </main>
+      </AppShell>
+    );
+  }
 
-    if (error) {
-      console.error("Logout failed:", error.message);
-      setLoggingOut(false);
-      return;
-    }
+  if (error || !summary) {
+    return (
+      <AppShell>
+        <BrandHeader title="Dashboard" />
 
-    navigate("/auth", {
-      replace: true,
-    });
-  };
+        <main className="px-5 py-5">
+          <Card className="p-5 text-center">
+            <p className="text-sm font-semibold text-red-400">
+              Unable to load dashboard
+            </p>
+
+            <p className="mt-2 text-xs text-[#777d92]">
+              {error}
+            </p>
+          </Card>
+        </main>
+      </AppShell>
+    );
+  }
+
+  const completed =
+    summary.orders_by_status.completed ?? 0;
+
+  const invalid =
+    summary.orders_by_status.invalid ?? 0;
+
+  const completedRate =
+    summary.total_orders > 0
+      ? Math.round(
+          (completed /
+            summary.total_orders) *
+            100,
+        )
+      : 0;
+
+  const invalidRate =
+    summary.total_orders > 0
+      ? Math.round(
+          (invalid /
+            summary.total_orders) *
+            100,
+        )
+      : 0;
 
   return (
     <AppShell>
-      {/* Dashboard header */}
-      <header className="border-b border-[#252934] px-5 py-5">
-        <div className="flex items-start justify-between gap-3">
-          <MenuDrawer />
-          <div className="flex items-center gap-4">
-            <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-[#6675ff] text-lg font-bold text-white">
-              CF
-            </div>
+      <BrandHeader title="Dashboard" />
 
-            <div>
-              <p className="font-mono text-xs uppercase tracking-[0.25em] text-[#858bab]">
-                Cosmic Fit
-              </p>
-
-              <h1 className="mt-1 text-2xl font-bold text-white">
-                Dashboard
-              </h1>
-            </div>
-          </div>
-
-          <div className="flex min-w-0 flex-col items-end gap-2">
-            <div className="flex max-w-[190px] items-center gap-2 rounded-full border border-[#3a3e49] bg-[#22252d] px-3 py-2">
-              <span className="h-2 w-2 shrink-0 rounded-full bg-green-400" />
-
-              <span
-                className="truncate text-xs text-[#d7d9e2]"
-                title={email}
-              >
-                {email || "Loading..."}
-              </span>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleLogout}
-              disabled={loggingOut}
-              className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-[#8f95aa] transition hover:bg-[#252934] hover:text-red-300 disabled:opacity-50"
-            >
-              <LogOut className="h-3.5 w-3.5" />
-
-              {loggingOut
-                ? "Logging out..."
-                : "Logout"}
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <main className="px-5 py-5">
+      <main className="px-5 py-5 pb-24">
         <p className="font-mono text-xs uppercase tracking-[0.2em] text-[#777d98]">
-          Today — Aug 17
+          Live portal data
         </p>
 
+        {/* Total orders */}
         <Card className="mt-5 p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="font-mono text-sm text-[#777d98]">
-                Orders today
+                Total orders
               </p>
 
               <p className="mt-3 text-5xl font-bold text-white">
-                47
+                {summary.total_orders}
               </p>
             </div>
 
@@ -178,6 +204,7 @@ export function DashboardPage() {
           </div>
         </Card>
 
+        {/* Status summary */}
         <div className="mt-4 grid grid-cols-2 gap-4">
           <Card className="p-5">
             <div className="flex items-start justify-between">
@@ -187,7 +214,7 @@ export function DashboardPage() {
                 </p>
 
                 <p className="mt-4 text-4xl font-bold text-green-400">
-                  39
+                  {completed}
                 </p>
               </div>
 
@@ -195,7 +222,7 @@ export function DashboardPage() {
             </div>
 
             <p className="mt-4 font-mono text-xs text-[#777d98]">
-              83% rate
+              {completedRate}% rate
             </p>
           </Card>
 
@@ -207,7 +234,7 @@ export function DashboardPage() {
                 </p>
 
                 <p className="mt-4 text-4xl font-bold text-red-400">
-                  3
+                  {invalid}
                 </p>
               </div>
 
@@ -215,32 +242,107 @@ export function DashboardPage() {
             </div>
 
             <p className="mt-4 font-mono text-xs text-[#777d98]">
-              6% rate
+              {invalidRate}% rate
             </p>
           </Card>
         </div>
 
+        {/* Recent orders */}
         <section className="mt-8">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-mono text-xs uppercase tracking-[0.2em] text-[#777d98]">
               Recent Orders
             </h2>
 
-            <Link
-              to="/orders"
+            <button
+              type="button"
+              onClick={() =>
+                navigate("/orders")
+              }
               className="font-mono text-sm text-[#7b86ff]"
             >
               View all →
-            </Link>
+            </button>
           </div>
 
           <div className="space-y-3">
-            {recentOrders.map((order) => (
-              <OrderCard
-                key={order.id}
-                order={order}
-              />
-            ))}
+            {recentOrders.length === 0 ? (
+              <Card className="p-6 text-center text-sm text-[#777d92]">
+                No orders yet.
+              </Card>
+            ) : (
+              recentOrders.map((order) => {
+                const createdAt =
+                  new Date(
+                    order.createdAt,
+                  );
+
+                return (
+                  <Card
+                    key={order.id}
+                    className="cursor-pointer p-4 transition-colors hover:border-[#383d52]"
+                    onClick={() =>
+                      navigate(
+                        `/orders/${order.id}`,
+                      )
+                    }
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <h3 className="text-base font-bold text-white">
+                          {order.reference}
+                        </h3>
+
+                        <StatusBadge
+                          status={order.status}
+                        />
+                      </div>
+
+                      <ChevronRight className="h-5 w-5 text-[#777d92]" />
+                    </div>
+
+                    <div className="mt-3 flex items-center justify-between text-xs text-[#777d92]">
+                      <div className="flex items-center gap-4">
+                        <span className="flex items-center gap-1.5">
+                          <Package className="h-3.5 w-3.5" />
+                          {order.itemCount}{" "}
+                          {order.itemCount === 1
+                            ? "item"
+                            : "items"}
+                        </span>
+
+                        <span className="flex items-center gap-1.5">
+                          <Box className="h-3.5 w-3.5" />
+                          {order.boxCount}{" "}
+                          {order.boxCount === 1
+                            ? "box"
+                            : "boxes"}
+                        </span>
+                      </div>
+
+                      <span className="font-mono text-[11px]">
+                        {createdAt.toLocaleDateString(
+                          [],
+                          {
+                            month: "short",
+                            day: "numeric",
+                          },
+                        )}
+                        ,{" "}
+                        {createdAt.toLocaleTimeString(
+                          [],
+                          {
+                            hour: "2-digit",
+                            minute:
+                              "2-digit",
+                          },
+                        )}
+                      </span>
+                    </div>
+                  </Card>
+                );
+              })
+            )}
           </div>
         </section>
       </main>

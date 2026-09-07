@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Search, ChevronRight, Package, Box, Filter } from "lucide-react";
+
+import { apiFetch } from "../lib/api";
 import { useNavigate } from "react-router-dom";
 
 import { AppShell } from "../components/layout/AppShell";
@@ -10,67 +12,74 @@ import StatusBadge from "../components/ui/statusBadge";
 interface OrderSummary {
   id: string;
   reference: string;
-  status: "Completed" | "Processing" | "Invalid";
+  status: string;
   itemsCount: number;
   boxesCount: number;
   time: string;
   date: string;
 }
 
-const mockOrders: OrderSummary[] = [
-  {
-    id: "1",
-    reference: "ORD-2847",
-    status: "Completed",
-    itemsCount: 12,
-    boxesCount: 3,
-    time: "09:42 AM",
-    date: "Aug 17",
-  },
-  {
-    id: "2",
-    reference: "ORD-2846",
-    status: "Processing",
-    itemsCount: 8,
-    boxesCount: 2,
-    time: "09:15 AM",
-    date: "Aug 17",
-  },
-  {
-    id: "3",
-    reference: "ORD-2845",
-    status: "Invalid",
-    itemsCount: 15,
-    boxesCount: 0,
-    time: "08:50 AM",
-    date: "Aug 17",
-  },
-  {
-    id: "4",
-    reference: "ORD-2844",
-    status: "Completed",
-    itemsCount: 6,
-    boxesCount: 1,
-    time: "04:30 PM",
-    date: "Aug 16",
-  },
-  {
-    id: "5",
-    reference: "ORD-2843",
-    status: "Completed",
-    itemsCount: 22,
-    boxesCount: 5,
-    time: "02:10 PM",
-    date: "Aug 16",
-  },
-];
+
 
 export function OrdersPage() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("All");
+  const [orders, setOrders] = useState<OrderSummary[]>([]);
 
-  const filteredOrders = mockOrders.filter((order) => {
+  useEffect(() => {
+    const loadOrders = async () => {
+      try {
+        const basicOrders = await apiFetch<
+          {
+            order_id: number;
+            status: string;
+            created_at: string;
+          }[]
+        >("/orders/");
+
+        const detailedOrders = await Promise.all(
+          basicOrders.map(async (order) => {
+            const details = await apiFetch<{
+              order_id: number;
+              status: string;
+              created_at: string;
+              items: unknown[];
+              box_types: string[];
+            }>(`/orders/${order.order_id}`);
+
+            const createdAt = new Date(order.created_at);
+
+            return {
+              id: String(order.order_id),
+              reference: `ORD-${order.order_id}`,
+              status:
+                order.status.charAt(0).toUpperCase() +
+                order.status.slice(1),
+              itemsCount: details.items.length,
+              boxesCount: details.box_types.length,
+              time: createdAt.toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+              date: createdAt.toLocaleDateString([], {
+                month: "short",
+                day: "numeric",
+              }),
+            };
+          }),
+        );
+
+        setOrders(detailedOrders);
+      } catch (error) {
+        console.error("Failed to load orders:", error);
+      }
+    };
+
+    loadOrders();
+  }, []);
+
+  const filteredOrders = orders.filter((order) => {
     const matchesSearch = order.reference
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
@@ -86,7 +95,7 @@ export function OrdersPage() {
         right={
           <span className="bg-[#1C1F26] border border-gray-700 text-gray-300 text-xs px-3 py-1 rounded-full flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
-            {mockOrders.length} Total
+            {orders.length} Total
           </span>
         }
       />
@@ -108,7 +117,7 @@ export function OrdersPage() {
           {/* Filter Pills */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
             <Filter className="h-3.5 w-3.5 text-[#777d92] shrink-0 mr-1" />
-            {["All", "Completed", "Processing", "Invalid"].map((filter) => (
+            {["All", "Draft", "Validated" , "Completed", "Processing", "Invalid"].map((filter) => (
               <button
                 key={filter}
                 type="button"
@@ -140,7 +149,7 @@ export function OrdersPage() {
               <Card
                 key={order.id}
                 className="p-4 hover:border-[#383d52] transition-colors cursor-pointer group"
-                onClick={() => navigate(`/orders/${order.reference}`)}
+                onClick={() => navigate(`/orders/${order.id}`)}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">

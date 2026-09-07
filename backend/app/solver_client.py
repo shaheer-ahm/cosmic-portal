@@ -9,7 +9,7 @@ from app import models, schemas
 
 load_dotenv()
 
-SOLVER_URL = os.getenv("SOLVER_URL")
+SOLVER_URL = (os.getenv("SOLVER_URL") or "").rstrip("/")
 # TODO: SOLVER_API_KEY = os.getenv("SOLVER_API_KEY")
 
 SOLVER_TIMEOUT_SECONDS = 55.0

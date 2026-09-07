@@ -6,6 +6,7 @@ import { PageHeader } from "../components/layout/PageHeader";
 import { BoxEditor } from "../components/orders/BoxEditor";
 import { ItemEditor } from "../components/orders/ItemEditor";
 import { Card } from "../components/ui/Card";
+import { apiFetch } from "../lib/api";
 
 import type { BoxType, PackerItem } from "../types/domain";
 
@@ -64,23 +65,14 @@ const sampleItems: PackerItem[] = [
 
 const sampleBoxes: BoxType[] = [
   {
-    Reference: "SML",
-    Width: 150,
-    Length: 150,
-    Depth: 150,
-    MaxWeight: 8.5,
-    BoxWeight: 0.5,
-    Active: true,
-    MaximumBoxes: 100,
-  },
-  {
-    Reference: "MED",
-    Width: 400,
+    Reference: "BOX-SMALL",
+    Width: 300,
     Length: 400,
-    Depth: 400,
-    MaxWeight: 15.2,
-    BoxWeight: 0.75,
+    Depth: 250,
+    MaxWeight: 15,
+    BoxWeight: 0.8,
     Active: true,
+    MaximumBoxes: 5,
   },
 ];
 
@@ -339,9 +331,8 @@ export function NewOrderPage() {
     return errors;
   };
 
-  const submit = () => {
-    const validationErrors =
-      validateForm();
+  const submit = async () => {
+    const validationErrors = validateForm();
 
     if (validationErrors.length > 0) {
       setIssues(validationErrors);
@@ -357,22 +348,69 @@ export function NewOrderPage() {
 
     setIssues([]);
 
-    const order = {
-      orderRef: orderRef
-        .trim()
-        .toUpperCase(),
-      items,
-      boxes,
-    };
+    try {
+      // 1. Create the order
+      const createdOrder = await apiFetch<{
+        order_id: number;
+        status: string;
+        created_at: string;
+      }>("/orders/", {
+        method: "POST",
+        body: JSON.stringify({}),
+      });
 
-    // Temporary frontend-only behaviour.
-    // Your teammate can replace this with the API call later.
-    console.log(
-      "New order ready for API:",
-      order,
-    );
+      // 2. Add every item to that order
+      await Promise.all(
+        items.map((item) =>
+          apiFetch(
+            `/orders/${createdOrder.order_id}/items/`,
+            {
+              method: "POST",
+              body: JSON.stringify({
+                ItemCode: item.ItemCode.trim(),
+                ItemReference: item.ItemReference.trim(),
+                Width: item.Width,
+                Length: item.Length,
+                Depth: item.Depth,
+                Weight: item.Weight,
+                BoxGroup:
+                  item.BoxGroup?.trim() || null,
+              }),
+            },
+          ),
+        ),
+      );
+      // 3. Attach selected box types to the order
+      await apiFetch(
+        `/orders/${createdOrder.order_id}/box-types`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            references: boxes
+              .filter((box) => box.Active !== false)
+              .map((box) => box.Reference.trim()),
+          }),
+        },
+      );
 
-    setSubmitted(true);
+      setOrderRef(`ORD-${createdOrder.order_id}`);
+      setSubmitted(true);
+
+      console.log(
+        "ORDER + ITEMS SAVED:",
+        createdOrder.order_id,
+      );
+    } catch (error) {
+      console.error("Failed to submit order:", error);
+
+      setIssues([
+        error instanceof Error
+          ? error.message
+          : "Failed to submit order.",
+      ]);
+
+      setSubmitted(false);
+    }
 
     window.scrollTo({
       top: 0,
