@@ -6,7 +6,7 @@ import {
     parsePackResponse,
     parseBoxSlug,
     type PackResponse,
-} from "@perfect-fit/visualizer";
+} from "@comp4050-fiv/visualizer";
 
 import { apiFetch } from "../lib/api";
 import { AppShell } from "../components/layout/AppShell";

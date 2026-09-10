@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { boxSlug } from "@perfect-fit/visualizer";
+import { boxSlug } from "@comp4050-fiv/visualizer";
 
 import { apiFetch } from "../lib/api";
 
