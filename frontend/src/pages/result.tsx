@@ -4,7 +4,8 @@ import {
   Package,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
+import { boxSlug } from "@comp4050-fiv/visualizer";
 
 import { apiFetch } from "../lib/api";
 
@@ -771,10 +772,12 @@ export function ResultPage() {
                         100;
 
                       return (
-                        <Card
+                        <Link
                           key={box.BoxIndex}
-                          className="p-4"
+                          to={`/orders/${realOrder.order_id}/boxes/${boxSlug(box.BoxIndex)}`}
+                          className="block"
                         >
+                        <Card className="p-4 transition-colors hover:border-[#727eff]">
                           <div className="flex items-start gap-3">
                             <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#2d3150] text-[#727eff]">
                               <Box className="h-5 w-5" />
@@ -1039,6 +1042,7 @@ export function ResultPage() {
                             </div>
                           </div>
                         </Card>
+                        </Link>
                       );
                     },
                   )}

@@ -18,7 +18,8 @@ app = FastAPI(title="FitPortal API", version="0.1.0")
 ALLOWED_ORIGINS = [
     origin.strip()
     for origin in os.getenv(
-        "ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173"
+        "ALLOWED_ORIGINS",
+        "http://localhost:3000,http://localhost:5173,http://localhost:5174",
     ).split(",")
     if origin.strip()
 ]

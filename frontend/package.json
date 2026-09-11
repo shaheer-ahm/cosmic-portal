@@ -12,6 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@comp4050-fiv/visualizer": "0.1.1",
     "@supabase/supabase-js": "^2.112.4",
     "lucide-react": "^1.37.0",
     "react": "^19.2.8",
