@@ -11,6 +11,7 @@ export interface PackerItem {
   Length: number;
   Depth: number;
   Weight: number;
+  Quantity: number;
   BoxGroup?: string;
 }
 

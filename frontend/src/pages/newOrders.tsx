@@ -17,6 +17,7 @@ const blankItem = (): PackerItem => ({
   Length: 0,
   Depth: 0,
   Weight: 0,
+  Quantity: 1,
   BoxGroup: "",
 });
 
@@ -31,9 +32,6 @@ const blankBox = (): BoxType => ({
   MaximumBoxes: undefined,
 });
 
-const newOrderReference = () =>
-  `ORD-${Math.floor(1000 + Math.random() * 9000)}`;
-
 const sampleItems: PackerItem[] = [
   {
     ItemCode: "ITM-001",
@@ -42,6 +40,7 @@ const sampleItems: PackerItem[] = [
     Length: 200,
     Depth: 50,
     Weight: 1,
+    Quantity: 1,
     BoxGroup: "GROUP-A",
   },
   {
@@ -51,6 +50,7 @@ const sampleItems: PackerItem[] = [
     Length: 150,
     Depth: 75,
     Weight: 2.8,
+    Quantity: 1,
   },
   {
     ItemCode: "ITM-003",
@@ -59,25 +59,42 @@ const sampleItems: PackerItem[] = [
     Length: 80,
     Depth: 120,
     Weight: 0.82,
+    Quantity: 1,
     BoxGroup: "GROUP-B",
   },
 ];
 
 const sampleBoxes: BoxType[] = [
   {
-    Reference: "BOX-SMALL",
-    Width: 300,
-    Length: 400,
-    Depth: 250,
-    MaxWeight: 15,
-    BoxWeight: 0.8,
+    Reference: "SML",
+    Width: 150,
+    Length: 150,
+    Depth: 150,
+    MaxWeight: 8.5,
+    BoxWeight: 0.5,
     Active: true,
-    MaximumBoxes: 5,
+    MaximumBoxes: 100,
+  },
+  {
+    Reference: "MED",
+    Width: 400,
+    Length: 400,
+    Depth: 400,
+    MaxWeight: 15.2,
+    BoxWeight: 0.75,
+    Active: true,
+  },
+  {
+    Reference: "LRG",
+    Width: 1200,
+    Length: 1200,
+    Depth: 1200,
+    Active: false,
   },
 ];
 
 export function NewOrderPage() {
-  const [orderRef, setOrderRef] = useState(newOrderReference());
+  const [orderRef, setOrderRef] = useState("");
 
   const [items, setItems] = useState<PackerItem[]>([
     blankItem(),
@@ -174,12 +191,6 @@ export function NewOrderPage() {
   const validateForm = (): string[] => {
     const errors: string[] = [];
 
-    if (!orderRef.trim()) {
-      errors.push(
-        "Order reference is required.",
-      );
-    }
-
     if (items.length === 0) {
       errors.push(
         "At least one item is required.",
@@ -222,6 +233,15 @@ export function NewOrderPage() {
       if (item.Weight < 0) {
         errors.push(
           `Item ${number}: Weight cannot be negative.`,
+        );
+      }
+
+      if (
+        !Number.isInteger(item.Quantity) ||
+        item.Quantity < 1
+      ) {
+        errors.push(
+          `Item ${number}: Quantity must be a whole number of at least 1.`,
         );
       }
     });
@@ -373,6 +393,7 @@ export function NewOrderPage() {
                 Length: item.Length,
                 Depth: item.Depth,
                 Weight: item.Weight,
+                Quantity: item.Quantity,
                 BoxGroup:
                   item.BoxGroup?.trim() || null,
               }),
@@ -440,14 +461,14 @@ export function NewOrderPage() {
               <input
                 id="orderRef"
                 value={orderRef}
-                onChange={(event) => {
-                  setOrderRef(
-                    event.target.value,
-                  );
-                  setSubmitted(false);
-                }}
-                className="mt-1 w-full bg-transparent text-xl font-bold text-white outline-none"
+                readOnly
+                placeholder="Generated after submission"
+                className="mt-1 w-full cursor-not-allowed bg-transparent text-xl font-bold text-white outline-none placeholder:text-[#666c80]"
               />
+
+              <p className="mt-1 text-xs text-[#666c80]">
+                Assigned automatically by FitPortal when the order is created.
+              </p>
             </div>
           </div>
         </Card>
@@ -475,8 +496,7 @@ export function NewOrderPage() {
 
         {submitted && (
           <div className="mt-4 rounded-2xl border border-green-400/25 bg-green-400/10 p-4 text-sm text-green-300">
-            Order details are valid and
-            ready to be sent to the API.
+            Order saved successfully{orderRef ? ` as ${orderRef}` : ""}.
           </div>
         )}
 
@@ -609,5 +629,3 @@ export function NewOrderPage() {
     </AppShell>
   );
 }
-
-export default NewOrderPage;

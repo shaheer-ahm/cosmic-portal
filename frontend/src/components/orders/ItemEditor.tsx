@@ -112,7 +112,7 @@ export function ItemEditor({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <Field
             label="Weight"
             type="number"
@@ -126,6 +126,20 @@ export function ItemEditor({
               })
             }
             suffix="kg"
+          />
+
+          <Field
+            label="Quantity"
+            type="number"
+            step="1"
+            min="1"
+            value={item.Quantity}
+            onChange={(event) =>
+              onChange({
+                ...item,
+                Quantity: toNumber(event.target.value),
+              })
+            }
           />
 
           <Field

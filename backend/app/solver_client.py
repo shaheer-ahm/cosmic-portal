@@ -1,5 +1,6 @@
 import os
 import uuid
+from time import perf_counter
 from typing import Any, Optional
  
 import httpx
@@ -13,7 +14,7 @@ SOLVER_URL = (os.getenv("SOLVER_URL") or "").rstrip("/")
 # TODO: SOLVER_API_KEY = os.getenv("SOLVER_API_KEY")
 
 SOLVER_TIMEOUT_SECONDS = 55.0
-SOLVER_HEALTH_TIMEOUT_SECONDS = 5.0
+SOLVER_HEALTH_TIMEOUT_SECONDS = 15.0
 
 
 class SolverError(Exception):
@@ -22,15 +23,16 @@ class SolverError(Exception):
 
 
 def _item_payload(item: "models.OrderItem") -> dict[str, Any]:
-    payload = {
+    payload: dict[str, Any] = {
         "ItemCode": item.ItemCode,
         "ItemReference": item.ItemReference,
         "Width": item.Width,
         "Length": item.Length,
         "Depth": item.Depth,
         "Weight": item.Weight,
-        "BoxGroup": item.BoxGroup,
     }
+    if item.BoxGroup is not None:
+        payload["BoxGroup"] = item.BoxGroup
     if item.Quantity is not None:
         payload["Quantity"] = item.Quantity
     if item.KeepUpright is not None:
@@ -39,16 +41,20 @@ def _item_payload(item: "models.OrderItem") -> dict[str, Any]:
 
 
 def _box_type_payload(box: "models.BoxType") -> dict[str, Any]:
-    return {
+    payload: dict[str, Any] = {
         "Reference": box.Reference,
         "Width": box.Width,
         "Length": box.Length,
         "Depth": box.Depth,
-        "MaxWeight": box.MaxWeight,
-        "BoxWeight": box.BoxWeight,
         "Active": box.Active,
-        "MaximumBoxes": box.MaximumBoxes,
     }
+    if box.MaxWeight is not None:
+        payload["MaxWeight"] = box.MaxWeight
+    if box.BoxWeight is not None:
+        payload["BoxWeight"] = box.BoxWeight
+    if box.MaximumBoxes is not None:
+        payload["MaximumBoxes"] = box.MaximumBoxes
+    return payload
 
 
 def call_solver(
@@ -101,23 +107,42 @@ def call_solver(
 
 
 def check_solver_health() -> dict[str, Any]:
-    """
-    Pings FitSolver's GET /health. Used by GET /api/v1/integration/status.
-    """
+    """Ping FitSolver's GET /health and report real connectivity/latency."""
     if not SOLVER_URL:
-        return {"configured": False, "detail": "SOLVER_URL is not configured"}
-
-    try:
-        resp = httpx.get(f"{SOLVER_URL}/health", timeout=SOLVER_HEALTH_TIMEOUT_SECONDS)
-    except httpx.RequestError as exc:
         return {
             "configured": False,
-            "detail": (
-                f"FitSolver unreachable ({exc}). If it's been idle 15+ min "
-                "it may just be waking up - retry in ~30s."
-            ),
+            "connected": False,
+            "latency_ms": None,
+            "detail": "SOLVER_URL is not configured",
         }
 
-    if resp.status_code == 200:
-        return {"configured": True, "detail": "FitSolver reachable"}
-    return {"configured": False, "detail": f"FitSolver returned {resp.status_code} on /health"}
+    started = perf_counter()
+    try:
+        resp = httpx.get(
+            f"{SOLVER_URL}/health",
+            timeout=SOLVER_HEALTH_TIMEOUT_SECONDS,
+        )
+        latency_ms = round((perf_counter() - started) * 1000, 1)
+    except httpx.RequestError as exc:
+        latency_ms = round((perf_counter() - started) * 1000, 1)
+        return {
+            "configured": True,
+            "connected": False,
+            "latency_ms": latency_ms,
+            "detail": f"FitSolver unreachable: {exc.__class__.__name__}",
+        }
+
+    if 200 <= resp.status_code < 300:
+        return {
+            "configured": True,
+            "connected": True,
+            "latency_ms": latency_ms,
+            "detail": "FitSolver reachable",
+        }
+
+    return {
+        "configured": True,
+        "connected": False,
+        "latency_ms": latency_ms,
+        "detail": f"FitSolver returned HTTP {resp.status_code} on /health",
+    }

@@ -39,6 +39,23 @@ CREATE TABLE IF NOT EXISTS box_types (
     "MaximumBoxes"  INT NULL
 );
 
+
+-- Starter box reference data supplied by Thomax for integration testing.
+-- Idempotent: existing references are updated to the supplied values.
+INSERT INTO box_types ("Reference", "Width", "Length", "Depth", "MaxWeight", "BoxWeight", "Active", "MaximumBoxes")
+VALUES
+    ('SML', 150, 150, 150, 8.5, 0.5, TRUE, 100),
+    ('MED', 400, 400, 400, 15.2, 0.75, TRUE, NULL),
+    ('LRG', 1200, 1200, 1200, NULL, NULL, FALSE, NULL)
+ON CONFLICT ("Reference") DO UPDATE SET
+    "Width" = EXCLUDED."Width",
+    "Length" = EXCLUDED."Length",
+    "Depth" = EXCLUDED."Depth",
+    "MaxWeight" = EXCLUDED."MaxWeight",
+    "BoxWeight" = EXCLUDED."BoxWeight",
+    "Active" = EXCLUDED."Active",
+    "MaximumBoxes" = EXCLUDED."MaximumBoxes";
+
 -- Order box type selection
 -- Which box types are available for use when optimising a given order.
 CREATE TABLE IF NOT EXISTS order_box_types (

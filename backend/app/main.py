@@ -13,7 +13,8 @@ load_dotenv()
 # if they don't already exist
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="FitPortal API", version="0.1.0")
+APP_VERSION = "0.1.0"
+app = FastAPI(title="FitPortal API", version=APP_VERSION)
 
 ALLOWED_ORIGINS = [
     origin.strip()
@@ -42,4 +43,8 @@ app.include_router(integration.router)
 
 @app.get("/api/v1/health", tags=["health"])
 def health_check():
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "service": "FitPortal API",
+        "version": APP_VERSION,
+    }
