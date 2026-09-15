@@ -629,3 +629,4 @@ export function NewOrderPage() {
     </AppShell>
   );
 }
+export default NewOrderPage;
