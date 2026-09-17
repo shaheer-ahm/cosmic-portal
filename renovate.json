@@ -1,13 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
-  "rangeStrategy": "pin",
-  "packageRules": [
-    {
-      "matchPackageNames": ["@comp4050-fiv/visualizer"],
-      "matchUpdateTypes": ["patch", "minor"],
-      "automerge": true,
-      "schedule": ["at any time"]
-    }
-  ]
+  "extends": [
+    "config:recommended"
+  ],
+  "rangeStrategy": "pin"
 }

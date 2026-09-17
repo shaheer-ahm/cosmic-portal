@@ -12,39 +12,18 @@ packing results are rendered by the Cosmic Visualizer library.
 
 ## Prerequisites
 - Node.js >= 20.19
-- Access to the `COMP4050-FiV` GitHub organisation
+
+No GitHub token, npm registry login or organisation membership is needed. The
+visualizer ships as a tarball committed to this repository.
 
 ## Setup
 
-1. **Authenticate to GitHub Packages** (one time per machine)
-
-   The visualizer is published as a private package, so npm needs a token
-   before it can install anything.
-
-   Create a personal access token with the `read:packages` scope
-   (GitHub → Settings → Developer settings → Tokens), then export it:
-
-   ```bash
-   export NODE_AUTH_TOKEN=ghp_your_token_here
-   ```
-
-   Add that line to your `~/.bashrc` or `~/.zshrc` so it persists.
-
-   `.npmrc` in this directory already points the `@comp4050-fiv` scope at
-   `https://npm.pkg.github.com` and reads the token from that variable — the
-   token itself is never committed.
-
-   If you skip this step, `npm install` fails with:
-   ```
-   npm error 403 Forbidden - GET https://npm.pkg.github.com/@comp4050-fiv%2fvisualizer
-   ```
-
-2. **Install dependencies**
+1. **Install dependencies**
    ```bash
    npm ci
    ```
 
-3. **Configure environment**
+2. **Configure environment**
 
    Create a `.env` file in this directory:
 
@@ -63,19 +42,19 @@ packing results are rendered by the Cosmic Visualizer library.
    `.env` is gitignored and must never be committed. Vite reads it only at
    startup, so restart the dev server after changing it.
 
-4. **Start the backend first**
+3. **Start the backend first**
 
    See `../backend/README.md`. The frontend expects it on
    http://localhost:8000, and the backend's `ALLOWED_ORIGINS` must include
    this dev server's origin (`http://localhost:5173`, no trailing slash).
 
-5. **Run**
+4. **Run**
    ```bash
    npm run dev
    ```
    http://localhost:5173
 
-6. **Sign in**
+5. **Sign in**
 
    There is no seeded test account. Use the **Sign up** tab on `/auth` to
    create one — password must be at least 8 characters and contain a number.
@@ -95,28 +74,31 @@ packing results are rendered by the Cosmic Visualizer library.
 
 ## The visualizer dependency
 
-`@comp4050-fiv/visualizer` is consumed as a **versioned package**, pinned to an
-exact version in `package.json`:
+`@comp4050-fiv/visualizer` is vendored as an npm tarball committed to this
+repository:
 
 ```json
-"@comp4050-fiv/visualizer": "0.1.1"
+"@comp4050-fiv/visualizer": "file:vendor/comp4050-fiv-visualizer-0.1.1.tgz"
 ```
 
-It is not a git dependency, so you do **not** need access to the
-`Cosmic-Visualizer` repository or an SSH key — only the packages token from
-step 1.
+Everyone — including a fresh clone and any CI job — gets the identical build
+from `npm ci`, with no registry, no `.npmrc` and no credentials. Access to the
+`Cosmic-Visualizer` repository is not required either.
 
-Updates arrive as automated Renovate pull requests (see `../renovate.json`),
-which merge themselves once CI passes. To pull a version in by hand:
+### Taking a new version
+
+The visualizer team publishes each release as a `.tgz` attached to a GitHub
+Release (or hands one over directly). To upgrade:
 
 ```bash
-npm install @comp4050-fiv/visualizer@0.2.0
+rm vendor/comp4050-fiv-visualizer-0.1.1.tgz
+cp ~/Downloads/comp4050-fiv-visualizer-0.2.0.tgz vendor/
+npm install ./vendor/comp4050-fiv-visualizer-0.2.0.tgz
 ```
 
-To try in-progress work from the visualizer team before it is released:
+Commit the new tarball together with `package.json` and `package-lock.json`.
+The version in the filename is what stops npm from reusing a cached copy of the
+previous build, so never overwrite a tarball in place — always change the name.
 
-```bash
-npm install @comp4050-fiv/visualizer@next
-```
-
-Pin back to an exact version before merging — `next` is a moving target.
+Renovate cannot track a `file:` dependency, so visualizer bumps are manual and
+deliberate; every other dependency still updates automatically.
