@@ -202,11 +202,13 @@ class DashboardSummary(BaseModel):
 
 class IntegrationComponentStatus(BaseModel):
     configured: bool
+    connected: bool
     detail: str
+    latency_ms: Optional[float] = None
 
 class IntegrationStatus(BaseModel):
     solver: IntegrationComponentStatus
-    visualizer: IntegrationComponentStatus
+    supabase: IntegrationComponentStatus
 
 
 # Auth
