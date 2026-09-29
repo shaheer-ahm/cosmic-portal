@@ -1,27 +1,30 @@
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 from uuid import uuid4
- 
+
 from app import models, schemas
 from app.database import get_db
+from app.auth import get_current_user, require_supervisor
 from app.solver_client import call_solver, SolverError
 
 router = APIRouter(prefix="/api/v1/orders", tags=["orders"])
 
 
 @router.get("/", response_model=list[schemas.OrderOut])
-def list_orders(db: Session = Depends(get_db)):
+def list_orders(db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
     return db.query(models.Order).order_by(models.Order.created_at.desc()).all()
 
 
 @router.get("/{order_id}", response_model=schemas.OrderWithItemsOut)
-def get_order(order_id: int, db: Session = Depends(get_db)):
+def get_order(order_id: int, db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
     order = _get_order_or_404(db, order_id)
     return _order_with_box_types(order)
 
 
 @router.post("/", response_model=schemas.OrderOut, status_code=201)
-def create_order(order: schemas.OrderCreate, db: Session = Depends(get_db)):
+def create_order(
+    order: schemas.OrderCreate, db: Session = Depends(get_db), user: dict = Depends(get_current_user)
+):
     db_order = models.Order(status="draft")
     db.add(db_order)
     db.commit()
@@ -33,7 +36,10 @@ def create_order(order: schemas.OrderCreate, db: Session = Depends(get_db)):
 
 @router.post("/{order_id}/box-types", response_model=schemas.OrderWithItemsOut)
 def set_order_box_types(
-    order_id: int, selection: schemas.BoxTypeSelectionIn, db: Session = Depends(get_db)
+    order_id: int,
+    selection: schemas.BoxTypeSelectionIn,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
 ):
     """
     Replaces the full set of box types available for this order with the
@@ -74,7 +80,9 @@ def set_order_box_types(
     return _order_with_box_types(order)
 
 @router.get("/{order_id}/box-types", response_model=list[schemas.BoxTypeOut])
-def get_selected_box_types(order_id: int, db: Session = Depends(get_db)):
+def get_selected_box_types(
+    order_id: int, db: Session = Depends(get_db), user: dict = Depends(get_current_user)
+):
     _get_order_or_404(db, order_id)
     return (
         db.query(models.BoxType)
@@ -85,7 +93,9 @@ def get_selected_box_types(order_id: int, db: Session = Depends(get_db)):
     )
 
 @router.delete("/{order_id}/box-types/{reference}", status_code=204)
-def remove_selected_box_type(order_id: int, reference: str, db: Session = Depends(get_db)):
+def remove_selected_box_type(
+    order_id: int, reference: str, db: Session = Depends(get_db), user: dict = Depends(get_current_user)
+):
     _get_order_or_404(db, order_id)
     selection = (
         db.query(models.OrderBoxType)
@@ -103,7 +113,7 @@ def remove_selected_box_type(order_id: int, reference: str, db: Session = Depend
 # Validation
 
 @router.post("/{order_id}/validate", response_model=schemas.ValidateResponse)
-def validate_order(order_id: int, db: Session = Depends(get_db)):
+def validate_order(order_id: int, db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
     """
     Checks that the order has items, has at least one box type selected,
     and that every item fits inside at least one selected box type. 
@@ -156,7 +166,9 @@ def _item_fits_box(item: "models.OrderItem", box: "models.BoxType") -> bool:
 # Status
 
 @router.get("/{order_id}/status", response_model=schemas.OrderStatusOut)
-def get_order_status(order_id: int, db: Session = Depends(get_db)):
+def get_order_status(
+    order_id: int, db: Session = Depends(get_db), user: dict = Depends(get_current_user)
+):
     order = _get_order_or_404(db, order_id)
     return schemas.OrderStatusOut(order_id=order.order_id, status=order.status)
 
@@ -164,7 +176,9 @@ def get_order_status(order_id: int, db: Session = Depends(get_db)):
 # Results
 
 @router.get("/{order_id}/results", response_model=schemas.OrderResultOut)
-def get_order_results(order_id: int, db: Session = Depends(get_db)):
+def get_order_results(
+    order_id: int, db: Session = Depends(get_db), user: dict = Depends(get_current_user)
+):
     _get_order_or_404(db, order_id)
     result = (
         db.query(models.OrderResult)
@@ -184,21 +198,16 @@ def get_order_results(order_id: int, db: Session = Depends(get_db)):
 def optimise_order(
     order_id: int,
     db: Session = Depends(get_db),
+    user: dict = Depends(require_supervisor),
 ):
-    """
-    Submit an order for optimisation.
-
-    NOTE: this should require the SUPERVISOR role. Role-based permission 
-    is not implemented yet.
-    """
     order = _get_order_or_404(db, order_id)
- 
+
     if order.status != "validated":
         raise HTTPException(
             status_code=409,
             detail=f"Order must be validated before optimisation (current status: '{order.status}')",
         )
- 
+    
     items = db.query(models.OrderItem).filter(models.OrderItem.order_id == order_id).all()
     box_type_refs = [obt.Reference for obt in order.box_types]
     box_types = (
@@ -212,10 +221,10 @@ def optimise_order(
             status_code=400,
             detail="None of this order's selected box types are currently active",
         )
- 
+    
     order.status = "processing"
     db.commit()
- 
+
     try:
         result = call_solver(items, box_types, request_id=f"portal-order-{order_id}-{uuid4()}")
     except SolverError as exc:
@@ -224,7 +233,7 @@ def optimise_order(
         order.status = "validated"
         db.commit()
         raise HTTPException(status_code=502, detail=f"FitSolver call failed: {exc}")
- 
+
     existing_result = (
         db.query(models.OrderResult).filter(models.OrderResult.order_id == order_id).first()
     )
@@ -233,18 +242,18 @@ def optimise_order(
         existing_result.result_data = result_dict
     else:
         db.add(models.OrderResult(order_id=order_id, result_data=result_dict))
- 
+
     order.status = "completed"
     db.commit()
- 
+
     message = (
         "Optimisation completed successfully."
         if result.Success
         else f"Optimisation completed with {len(result.UnpackedItems)} item(s) unpacked."
     )
- 
+
     return schemas.OptimiseResponse(order_id=order.order_id, status=order.status, message=message)
- 
+
 
 # Helpers
 

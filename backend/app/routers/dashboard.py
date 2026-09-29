@@ -4,12 +4,13 @@ from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.database import get_db
+from app.auth import get_current_user
 
 router = APIRouter(prefix="/api/v1/dashboard", tags=["dashboard"])
 
 
 @router.get("/summary", response_model=schemas.DashboardSummary)
-def get_dashboard_summary(db: Session = Depends(get_db)):
+def get_dashboard_summary(db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
     total_orders = db.query(models.Order).count()
 
     status_counts = dict(

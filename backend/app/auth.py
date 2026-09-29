@@ -1,5 +1,6 @@
 import os
 import jwt
+from jwt import PyJWKClient
 from dotenv import load_dotenv
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -9,7 +10,10 @@ from app import models
 
 load_dotenv()
 
+SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET")
+
+_jwks_client = PyJWKClient(f"{SUPABASE_URL}/auth/v1/.well-known/jwks.json") if SUPABASE_URL else None
 
 bearer_scheme = HTTPBearer()
 
@@ -24,17 +28,27 @@ def get_current_user(
     Returns: {"user_id": <uuid str>, "email": <str>, "role": "USER"|"SUPERVISOR"}
     """
     token = credentials.credentials
+
     try:
-        payload = jwt.decode(
-            token,
-            SUPABASE_JWT_SECRET,
-            algorithms=["HS256"],
-            audience="authenticated",
-        )
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired")
+        alg = jwt.get_unverified_header(token).get("alg")
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
+    try:
+        if alg == "ES256":
+            if not _jwks_client:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="SUPABASE_URL is not configured - cannot verify ES256 tokens",
+                )
+            signing_key = _jwks_client.get_signing_key_from_jwt(token)
+            payload = jwt.decode(
+                token, signing_key.key, algorithms=["ES256"], audience="authenticated"
+            )
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired")
+    except jwt.PyJWTError as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid token: {exc}")
 
     user_id = payload.get("sub")
     email = payload.get("email")
@@ -47,7 +61,6 @@ def get_current_user(
     finally:
         db.close()
 
-    # Token is valid but no profile row exists yet, default to least-privileged.
     role = profile.role if profile else "USER"
 
     return {"user_id": user_id, "email": email, "role": role}
@@ -56,8 +69,6 @@ def get_current_user(
 def require_supervisor(user: dict = Depends(get_current_user)) -> dict:
     """
     Use as a dependency on routes that only SUPERVISORs may access.
-
-    NOTE: role enforcement is disabled in the API for now.
     """
     if user["role"] != "SUPERVISOR":
         raise HTTPException(
