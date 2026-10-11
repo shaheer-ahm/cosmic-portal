@@ -67,3 +67,12 @@ export interface StoredOrder {
   request: PackerRequest;
   result?: PackingResult;
 }
+
+export type UserRole = "user" | "supervisor" | "admin";
+export interface UserProfile {
+  id: string;
+  email: string;
+  role: UserRole;
+  full_name?: string;
+  created_at?: string;
+}

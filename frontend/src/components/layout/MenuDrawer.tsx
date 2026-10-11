@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { RoleGuard } from '../RoleGuard';
+import { useAuth } from '../../lib/useAuth';
 
 export const MenuDrawer: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { role } = useAuth();
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -57,6 +60,17 @@ export const MenuDrawer: React.FC = () => {
           >
             Orders
           </Link>
+          {/* Supervisor & Admin Only Link */}
+          <RoleGuard currentRole={role} allowedRoles={["supervisor", "admin"]}>
+            <div className="my-1 border-t border-[#383b44]" />
+            <Link
+              to="/profiles"
+              onClick={() => setIsOpen(false)}
+              className="block px-4 py-2.5 text-sm text-purple-300 font-medium transition hover:bg-purple-900/30 hover:text-purple-200"
+            >
+              Profiles Management
+            </Link>
+          </RoleGuard>
         </div>
       )}
     </div>
