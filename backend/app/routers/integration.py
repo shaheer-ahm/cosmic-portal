@@ -5,6 +5,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app import schemas
+from app.auth import get_current_user
 from app.database import get_db
 from app.solver_client import check_solver_health
 
@@ -14,7 +15,6 @@ router = APIRouter(prefix="/api/v1/integration", tags=["integration"])
 def _check_supabase_health(db: Session) -> dict:
     """Verify the backend can reach the Supabase Postgres database."""
     started = perf_counter()
-
     try:
         db.execute(text("SELECT 1"))
         latency_ms = round((perf_counter() - started) * 1000, 1)
@@ -35,8 +35,11 @@ def _check_supabase_health(db: Session) -> dict:
 
 
 @router.get("/status", response_model=schemas.IntegrationStatus)
-def get_integration_status(db: Session = Depends(get_db)):
-    """Return live health checks for FitSolver and Supabase.
+def get_integration_status(
+    db: Session = Depends(get_db), user: dict = Depends(get_current_user)
+):
+    """
+    Return live health checks for FitSolver and Supabase.
 
     FitPortal API availability is established by successfully reaching this
     endpoint (and /health) from the frontend. FitVisualizer is a frontend
@@ -45,7 +48,6 @@ def get_integration_status(db: Session = Depends(get_db)):
     """
     solver_status = check_solver_health()
     supabase_status = _check_supabase_health(db)
-
     return schemas.IntegrationStatus(
         solver=schemas.IntegrationComponentStatus(**solver_status),
         supabase=schemas.IntegrationComponentStatus(**supabase_status),

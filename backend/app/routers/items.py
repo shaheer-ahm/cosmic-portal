@@ -4,18 +4,19 @@ from sqlalchemy.orm import Session
 from app import models, schemas
 from app.database import get_db
 from app.routers.orders import _get_order_or_404
+from app.auth import get_current_user
 
 router = APIRouter(prefix="/api/v1/orders/{order_id}/items", tags=["items"])
 
 
 @router.get("/", response_model=list[schemas.ItemOut])
-def list_items(order_id: int, db: Session = Depends(get_db)):
+def list_items(order_id: int, db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
     _get_order_or_404(db, order_id)
     return db.query(models.OrderItem).filter(models.OrderItem.order_id == order_id).all()
 
 
 @router.get("/{item_id}", response_model=schemas.ItemOut)
-def get_item(order_id: int, item_id: str, db: Session = Depends(get_db)):
+def get_item(order_id: int, item_id: str, db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
     _get_order_or_404(db, order_id)
     item = db.query(models.OrderItem).filter(
         models.OrderItem.order_id == order_id, models.OrderItem.ItemCode == item_id
@@ -26,7 +27,7 @@ def get_item(order_id: int, item_id: str, db: Session = Depends(get_db)):
 
 
 @router.post("/", response_model=schemas.ItemOut, status_code=201)
-def create_item(order_id: int, item: schemas.ItemCreate, db: Session = Depends(get_db)):
+def create_item(order_id: int, item: schemas.ItemCreate, db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
     _get_order_or_404(db, order_id)
 
     existing = db.query(models.OrderItem).filter(
@@ -45,7 +46,7 @@ def create_item(order_id: int, item: schemas.ItemCreate, db: Session = Depends(g
 
 
 @router.put("/{item_id}", response_model=schemas.ItemOut)
-def update_item(order_id: int, item_id: str, item: schemas.ItemCreate, db: Session = Depends(get_db)):
+def update_item(order_id: int, item_id: str, item: schemas.ItemCreate, db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
     _get_order_or_404(db, order_id)
 
     db_item = db.query(models.OrderItem).filter(
@@ -63,7 +64,7 @@ def update_item(order_id: int, item_id: str, item: schemas.ItemCreate, db: Sessi
 
 
 @router.delete("/{item_id}", status_code=204)
-def delete_item(order_id: int, item_id: str, db: Session = Depends(get_db)):
+def delete_item(order_id: int, item_id: str, db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
     _get_order_or_404(db, order_id)
 
     db_item = db.query(models.OrderItem).filter(
