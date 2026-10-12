@@ -79,6 +79,7 @@ CREATE TABLE IF NOT EXISTS order_results (
 -- Profiles (roles)
 CREATE TABLE IF NOT EXISTS profiles (
     user_id     UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    email       VARCHAR(255) NULL,
     role        VARCHAR(20) NOT NULL DEFAULT 'USER' CHECK (role IN ('USER', 'SUPERVISOR')),
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -88,13 +89,40 @@ CREATE TABLE IF NOT EXISTS profiles (
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-    INSERT INTO public.profiles (user_id, role)
-    VALUES (NEW.id, 'USER');
+    INSERT INTO public.profiles (user_id, email, role)
+    VALUES (NEW.id, NEW.email, 'USER');
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- Keep profiles.email in sync if a user changes their email.
+CREATE OR REPLACE FUNCTION public.handle_user_email_change()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE public.profiles SET email = NEW.email WHERE user_id = NEW.id;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+DROP TRIGGER IF EXISTS on_auth_user_email_changed ON auth.users;
+CREATE TRIGGER on_auth_user_email_changed
+    AFTER UPDATE OF email ON auth.users
+    FOR EACH ROW
+    WHEN (OLD.email IS DISTINCT FROM NEW.email)
+    EXECUTE FUNCTION public.handle_user_email_change();
+
+-- Data API lockdown
+ALTER TABLE orders          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE order_items     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE box_types       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE order_box_types ENABLE ROW LEVEL SECURITY;
+ALTER TABLE order_results   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE profiles        ENABLE ROW LEVEL SECURITY;
+
+REVOKE ALL ON TABLE orders, order_items, box_types, order_box_types, order_results, profiles
+FROM anon, authenticated;

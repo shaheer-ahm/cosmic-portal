@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Literal
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -226,13 +226,17 @@ class CurrentUserOut(BaseModel):
     user_id: str
     email: Optional[str] = None
     role: str
+
     
-class OrderBoxTypeCreate(BaseModel):
-    box_reference: str
+# Users / roles
 
+class ProfileOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
 
-class OrderBoxTypeResponse(BaseModel):
-    order_id: int
-    box_reference: str
+    user_id: str
+    email: Optional[str] = None
+    role: str
+    created_at: datetime
 
-    model_config = ConfigDict(from_attributes = True)
+class RoleUpdate(BaseModel):
+    role: Literal["USER", "SUPERVISOR"]

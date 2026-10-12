@@ -87,5 +87,6 @@ class Profile(Base):
     __tablename__ = "profiles"
 
     user_id = Column(UUID(as_uuid=False), primary_key=True)
+    email = Column(String(255), nullable=True)
     role = Column(String(20), nullable=False, default="USER")
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())

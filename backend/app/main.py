@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import Base, engine
-from app.routers import orders, items, box_types, auth, dashboard, integration
+from app.routers import orders, items, box_types, auth, dashboard, integration, users
 
 load_dotenv()
 
@@ -39,7 +39,7 @@ app.include_router(items.router)
 app.include_router(box_types.router)
 app.include_router(dashboard.router)
 app.include_router(integration.router)
-
+app.include_router(users.router)
 
 @app.get("/api/v1/health", tags=["health"])
 def health_check():

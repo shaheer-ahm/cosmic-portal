@@ -113,11 +113,12 @@ def remove_selected_box_type(
 # Validation
 
 @router.post("/{order_id}/validate", response_model=schemas.ValidateResponse)
-def validate_order(order_id: int, db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
+def validate_order(order_id: int, db: Session = Depends(get_db), user: dict = Depends(require_supervisor)):
     """
     Checks that the order has items, has at least one box type selected,
     and that every item fits inside at least one selected box type. 
     Sets order.status to 'validated' or 'invalid' accordingly.
+    Supervisor only.
     """
     order = _get_order_or_404(db, order_id)
     issues: list[schemas.ValidationIssue] = []
