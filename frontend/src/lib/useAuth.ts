@@ -1,7 +1,29 @@
 import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
+import { apiFetch } from "./api";
 import type { UserRole } from "../types/domain";
+
+const roleCache = new Map<string, UserRole>();
+const inFlight = new Map<string, Promise<UserRole>>();
+
+function fetchRole(userId: string): Promise<UserRole> {
+  const cached = roleCache.get(userId);
+  if (cached) return Promise.resolve(cached);
+
+  let pending = inFlight.get(userId);
+  if (!pending) {
+    pending = apiFetch<{ role: string }>("/auth/me")
+      .then((me) => {
+        const role = me.role.toLowerCase() as UserRole;
+        roleCache.set(userId, role);
+        return role;
+      })
+      .finally(() => inFlight.delete(userId));
+    inFlight.set(userId, pending);
+  }
+  return pending;
+}
 
 export function useAuth() {
   const [session, setSession] = useState<Session | null>(null);
@@ -9,31 +31,42 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchSessionAndRole = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
+    let active = true;
 
-      if (session?.user) {
-        // Reads role from app_metadata or user_metadata set by Supabase/FastAPI
-        const userRole = (session.user.app_metadata?.role || session.user.user_metadata?.role || "user") as UserRole;
-        setRole(userRole);
+    const apply = async (next: Session | null) => {
+      if (!active) return;
+      setSession(next);
+
+      if (!next?.user) {
+        setRole("user");
+        setLoading(false);
+        return;
       }
-      setLoading(false);
+
+      if (!roleCache.has(next.user.id)) setLoading(true);
+
+      try {
+        const resolved = await fetchRole(next.user.id);
+        if (active) setRole(resolved);
+      } catch (err) {
+        console.error("Could not load user role:", err);
+        if (active) setRole("user");
+      } finally {
+        if (active) setLoading(false);
+      }
     };
 
-    fetchSessionAndRole();
+    supabase.auth.getSession().then(({ data }) => apply(data.session));
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session?.user) {
-        const userRole = (session.user.app_metadata?.role || session.user.user_metadata?.role || "user") as UserRole;
-        setRole(userRole);
-      } else {
-        setRole("user");
-      }
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, next) => {
+      if (event === "SIGNED_OUT") roleCache.clear();
+      setTimeout(() => apply(next), 0);
     });
 
     return () => {
+      active = false;
       subscription.unsubscribe();
     };
   }, []);

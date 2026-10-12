@@ -1,8 +1,22 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "../components/layout/AppShell";
 import { PageHeader } from "../components/layout/PageHeader";
-import { supabase } from "../lib/supabase";
+import { apiFetch } from "../lib/api";
 import type { UserProfile, UserRole } from "../types/domain";
+
+interface ApiUser {
+  user_id: string;
+  email: string | null;
+  role: string;
+  created_at: string;
+}
+
+const toProfile = (u: ApiUser): UserProfile => ({
+  id: u.user_id,
+  email: u.email ?? "",
+  role: u.role.toLowerCase() as UserRole,
+  created_at: u.created_at,
+});
 
 export default function ProfileManagementPage() {
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
@@ -15,11 +29,11 @@ export default function ProfileManagementPage() {
 
   const fetchProfiles = async () => {
     setLoading(true);
-    const { data, error } = await supabase.from("profiles").select("*");
-    if (!error && data) {
-      setProfiles(data as UserProfile[]);
-    } else if (error) {
-      console.error("Error fetching profiles:", error.message);
+    try {
+      const data = await apiFetch<ApiUser[]>("/users/");
+      setProfiles(data.map(toProfile));
+    } catch (err) {
+      console.error("Error fetching profiles:", err);
     }
     setLoading(false);
   };
@@ -27,17 +41,18 @@ export default function ProfileManagementPage() {
   const handleRoleChange = async (userId: string, newRole: UserRole) => {
     setUpdatingId(userId);
 
-    // Update role in public profiles table
-    const { error } = await supabase
-      .from("profiles")
-      .update({ role: newRole })
-      .eq("id", userId);
-
-    if (error) {
-      alert("Failed to update role: " + error.message);
-    } else {
+    try {
+      const updated = await apiFetch<ApiUser>(`/users/${userId}/role`, {
+        method: "PUT",
+        body: JSON.stringify({ role: newRole.toUpperCase() }),
+      });
       setProfiles((prev) =>
-        prev.map((p) => (p.id === userId ? { ...p, role: newRole } : p))
+        prev.map((p) => (p.id === userId ? toProfile(updated) : p))
+      );
+    } catch (err) {
+      alert(
+        "Failed to update role: " +
+        (err instanceof Error ? err.message : "unknown error")
       );
     }
     setUpdatingId(null);
