@@ -72,6 +72,16 @@ visualizer ships as a tarball committed to this repository.
 | `npm run build` | Typecheck (`tsc --noEmit`) then production build |
 | `npm run preview` | Serve the production build locally |
 
+## Deployment
+
+The production frontend is deployed on Render:
+
+https://cosmic-portal-frontend.onrender.com
+
+Pushes to the 'frontend' branch run the GitHub Actions workflow in
+`.github/workflows/ci.yml`. Render deploys the site only after the CI checks
+pass successfully.
+
 ## The visualizer dependency
 
 `@comp4050-fiv/visualizer` is vendored as an npm tarball committed to this
