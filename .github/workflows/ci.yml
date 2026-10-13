@@ -35,16 +35,21 @@ jobs:
         with:
           python-version: "3.13"
           cache: pip
-          cache-dependency-path: backend/requirements.txt
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-dev.txt
       
-      - name: Install backend dependencies
-        run: pip install -r requirements.txt
+      - name: Install backend development dependencies
+        run: pip install -r requirements-dev.txt
 
       - name: Check backend dependencies
         run: pip check
 
       - name: Compile backend
         run: python -m compileall -q app
+
+      - name: Run backend tests
+        run: python -m pytest -q
 
   frontend-builds:
     name: Frontend build
