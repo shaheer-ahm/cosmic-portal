@@ -8,6 +8,7 @@ import { Link, useParams } from "react-router-dom";
 import { boxSlug } from "@comp4050-fiv/visualizer";
 
 import { apiFetch } from "../lib/api";
+import { useAuth } from "../lib/useAuth";
 
 import { AppShell } from "../components/layout/AppShell";
 import { PageHeader } from "../components/layout/PageHeader";
@@ -123,6 +124,8 @@ interface PackingResultResponse {
 
 export function ResultPage() {
   const { orderId } = useParams();
+  
+  const { role } = useAuth();
 
   const [realOrder, setRealOrder] =
     useState<OrderDetails | null>(null);
@@ -601,8 +604,9 @@ export function ResultPage() {
           </div>
         </section>
 
-        {/* Validation / optimisation */}
-        {realOrder.status.toLowerCase() !==
+        {/* Supervisor-only Validation / optimisation */}
+        {role === "supervisor" &&
+          realOrder.status.toLowerCase() !==
           "completed" && (
           <Card className="mt-7 p-5">
             <p className="text-sm font-semibold text-white">
