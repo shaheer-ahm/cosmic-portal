@@ -23,11 +23,11 @@ export function ItemEditor({
     <Card className="p-4">
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[#707793]">
+          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[#72879d]">
             Item {index + 1}
           </p>
 
-          <h3 className="mt-1 text-sm font-semibold text-white">
+          <h3 className="mt-1 text-sm font-semibold text-[#172f50]">
             {item.ItemReference || "New item"}
           </h3>
         </div>
@@ -35,7 +35,7 @@ export function ItemEditor({
         <button
           type="button"
           onClick={onRemove}
-          className="grid h-9 w-9 place-items-center rounded-xl text-[#777d8c] hover:bg-red-400/10 hover:text-red-300"
+          className="grid h-9 w-9 place-items-center rounded-xl text-[#71849a] hover:bg-[#fff1ef] hover:text-[#b64641]"
         >
           <Trash2 className="h-4 w-4" />
         </button>
@@ -68,7 +68,7 @@ export function ItemEditor({
           />
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="cf-measure-grid">
           <Field
             label="Width"
             type="number"
@@ -112,7 +112,7 @@ export function ItemEditor({
           />
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="cf-measure-grid">
           <Field
             label="Weight"
             type="number"

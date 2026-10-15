@@ -16,19 +16,19 @@ export function OrderCard({ order }: OrderCardProps) {
   return (
     <Link
       to={`/results/${order.id}`}
-      className="block rounded-[24px] border border-[#30343f] bg-[#22252c] p-5 transition hover:border-[#6677ff]/50"
+      className="block rounded-[24px] border border-[#dee7f0] bg-white p-5 transition hover:border-[#9fc9eb]"
     >
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-3">
-            <h3 className="font-mono text-lg font-bold text-white">
+            <h3 className="font-mono text-lg font-bold text-[#172f50]">
               {order.orderRef}
             </h3>
 
             <StatusBadge status={order.status} />
           </div>
 
-          <div className="mt-3 flex flex-wrap items-center gap-4 font-mono text-xs text-[#707792]">
+          <div className="mt-3 flex flex-wrap items-center gap-4 font-mono text-xs text-[#71849c]">
             <span className="flex items-center gap-1.5">
               <Box className="h-4 w-4" />
               {order.itemCount} items
@@ -40,7 +40,7 @@ export function OrderCard({ order }: OrderCardProps) {
           </div>
         </div>
 
-        <ChevronRight className="h-5 w-5 shrink-0 text-[#555962]" />
+        <ChevronRight className="h-5 w-5 shrink-0 text-[#7b8fa5]" />
       </div>
     </Link>
   );

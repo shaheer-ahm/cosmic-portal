@@ -84,35 +84,35 @@ export default function AuthPage() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#090b10] px-5 py-10">
-      <div className="w-full max-w-md">
+    <main className="cf-auth-screen">
+      <div className="cf-auth-container">
         <div className="mb-8 text-center">
-          <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-[#303654] text-[#7180ff]">
+          <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-[#e7f3ff] text-[#2582ce]">
             <LockKeyhole className="h-7 w-7" />
           </div>
 
-          <p className="mt-5 font-mono text-xs uppercase tracking-[0.22em] text-[#777d98]">
+          <p className="mt-5 font-mono text-xs uppercase tracking-[0.22em] text-[#7187a0]">
             Cosmic Fit
           </p>
 
-          <h1 className="mt-2 text-3xl font-bold text-white">
+          <h1 className="mt-2 text-3xl font-bold text-[#172f50]">
             FitPortal
           </h1>
 
-          <p className="mt-2 text-sm text-[#777d92]">
+          <p className="mt-2 text-sm text-[#6a7f99]">
             Sign in to access the portal
           </p>
         </div>
 
-        <div className="rounded-3xl border border-[#292d39] bg-[#171a22] p-5">
-          <div className="grid grid-cols-2 rounded-xl bg-[#101219] p-1">
+        <div className="rounded-3xl border border-[#dce5ee] bg-white p-5">
+          <div className="grid grid-cols-2 rounded-xl bg-[#eef3f8] p-1">
             <button
               type="button"
               onClick={() => switchMode("login")}
               className={`rounded-lg px-4 py-2.5 text-sm font-semibold transition ${
                 mode === "login"
-                  ? "bg-[#303654] text-[#9ba4ff]"
-                  : "text-[#777d92]"
+                  ? "bg-[#e7f3ff] text-[#2279c4]"
+                  : "text-[#6a7f99]"
               }`}
             >
               Login
@@ -123,8 +123,8 @@ export default function AuthPage() {
               onClick={() => switchMode("signup")}
               className={`rounded-lg px-4 py-2.5 text-sm font-semibold transition ${
                 mode === "signup"
-                  ? "bg-[#303654] text-[#9ba4ff]"
-                  : "text-[#777d92]"
+                  ? "bg-[#e7f3ff] text-[#2279c4]"
+                  : "text-[#6a7f99]"
               }`}
             >
               Sign Up
@@ -138,7 +138,7 @@ export default function AuthPage() {
             <div>
               <label
                 htmlFor="email"
-                className="mb-2 block text-xs font-medium text-[#a5a9b8]"
+                className="mb-2 block text-xs font-medium text-[#71849a]"
               >
                 Email
               </label>
@@ -152,14 +152,14 @@ export default function AuthPage() {
                   setEmail(event.target.value)
                 }
                 placeholder="you@example.com"
-                className="w-full rounded-xl border border-[#2c303d] bg-[#101219] px-4 py-3 text-sm text-white outline-none placeholder:text-[#555b6e] focus:border-[#6675ff]"
+                className="w-full rounded-xl border border-[#dfe7f1] bg-[#eef3f8] px-4 py-3 text-sm text-[#172f50] outline-none placeholder:text-[#94a5b8] focus:border-[#2686d5]"
               />
             </div>
 
             <div>
               <label
                 htmlFor="password"
-                className="mb-2 block text-xs font-medium text-[#a5a9b8]"
+                className="mb-2 block text-xs font-medium text-[#71849a]"
               >
                 Password
               </label>
@@ -173,24 +173,24 @@ export default function AuthPage() {
                   setPassword(event.target.value)
                 }
                 placeholder="Enter your password"
-                className="w-full rounded-xl border border-[#2c303d] bg-[#101219] px-4 py-3 text-sm text-white outline-none placeholder:text-[#555b6e] focus:border-[#6675ff]"
+                className="w-full rounded-xl border border-[#dfe7f1] bg-[#eef3f8] px-4 py-3 text-sm text-[#172f50] outline-none placeholder:text-[#94a5b8] focus:border-[#2686d5]"
               />
 
               {mode === "signup" && (
-                <p className="mt-2 text-xs text-[#777d92]">
+                <p className="mt-2 text-xs text-[#6a7f99]">
                   Minimum 8 characters and at least one number.
                 </p>
               )}
             </div>
 
             {error && (
-              <div className="rounded-xl border border-red-400/25 bg-red-400/10 px-4 py-3 text-sm text-red-300">
+              <div className="rounded-xl border border-[#f1ccc6] bg-[#fff1ef] px-4 py-3 text-sm text-[#b64641]">
                 {error}
               </div>
             )}
 
             {message && (
-              <div className="rounded-xl border border-green-400/25 bg-green-400/10 px-4 py-3 text-sm text-green-300">
+              <div className="rounded-xl border border-[#bfe9d2] bg-[#eaf9f0] px-4 py-3 text-sm text-[#137452]">
                 {message}
               </div>
             )}
@@ -198,7 +198,7 @@ export default function AuthPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl bg-[#6675ff] px-4 py-3.5 text-sm font-bold text-white transition hover:bg-[#7481ff] disabled:cursor-not-allowed disabled:opacity-60"
+              className="w-full rounded-xl bg-[#2686d5] px-4 py-3.5 text-sm font-bold text-white transition hover:bg-[#176caf] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading
                 ? "Please wait..."

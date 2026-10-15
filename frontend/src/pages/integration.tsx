@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 
 import { AppShell } from "../components/layout/AppShell";
+import { MenuDrawer } from "../components/layout/MenuDrawer";
 import { apiFetch } from "../lib/api";
 
 interface IntegrationComponentStatus {
@@ -236,12 +237,12 @@ export const Integration: React.FC = () => {
 
   const statusClasses = (status: ServiceStatus) => {
     if (status === "Connected") {
-      return "bg-emerald-950/40 border-emerald-800/50 text-emerald-400";
+      return "bg-[#e8f8ee] border-[#c3e8d1] text-[#14784f]";
     }
     if (status === "Degraded" || status === "Checking") {
-      return "bg-amber-950/40 border-amber-800/50 text-amber-400";
+      return "bg-[#fff5e5] border-[#f4dbb0] text-[#a76c14]";
     }
-    return "bg-red-950/40 border-red-800/50 text-red-400";
+    return "bg-[#fff0ed] border-[#f1d1cc] text-[#b64641]";
   };
 
   const dotClasses = (status: ServiceStatus) => {
@@ -252,14 +253,15 @@ export const Integration: React.FC = () => {
 
   return (
     <AppShell>
-      <div className="mx-auto max-w-md p-4 pb-24 font-sans">
+      <div className="cf-page cf-integration">
         <div className="mb-6 flex items-center justify-between pt-2">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600 text-sm font-bold">
+            <MenuDrawer />
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#2686d5] text-sm font-bold">
               CF
             </div>
             <div>
-              <p className="font-mono text-[10px] uppercase tracking-widest text-gray-400">
+              <p className="font-mono text-[10px] uppercase tracking-widest text-[#72859d]">
                 COSMIC FIT
               </p>
               <h1 className="text-xl font-bold">Integration</h1>
@@ -268,26 +270,26 @@ export const Integration: React.FC = () => {
         </div>
 
         <div className="mb-6">
-          <p className="mb-3 font-mono text-[11px] uppercase tracking-wider text-gray-400">
+          <p className="mb-3 font-mono text-[11px] uppercase tracking-wider text-[#72859d]">
             Services
           </p>
-          <div className="space-y-3">
+          <div className="space-y-3 cf-service-grid">
             {services.map((service) => {
               const Icon = service.icon;
 
               return (
                 <div
                   key={service.key}
-                  className="rounded-2xl border border-gray-800/80 bg-[#1A1D24] p-4"
+                  className="rounded-2xl border border-[#e1e8f1] bg-white p-4"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#242832] text-indigo-400">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#e8f3ff] text-[#227cbd]">
                         <Icon size={20} />
                       </div>
                       <div className="min-w-0">
                         <h3 className="text-sm font-semibold">{service.name}</h3>
-                        <p className="font-mono text-xs text-gray-500">
+                        <p className="font-mono text-xs text-[#8193a7]">
                           {service.latencyMs === null
                             ? "—"
                             : `${service.latencyMs} ms`}
@@ -309,7 +311,7 @@ export const Integration: React.FC = () => {
                     </span>
                   </div>
 
-                  <p className="mt-3 text-xs leading-5 text-gray-500">
+                  <p className="mt-3 text-xs leading-5 text-[#8193a7]">
                     {service.detail}
                   </p>
                 </div>
@@ -319,24 +321,24 @@ export const Integration: React.FC = () => {
         </div>
 
         <div>
-          <p className="mb-3 font-mono text-[11px] uppercase tracking-wider text-gray-400">
+          <p className="mb-3 font-mono text-[11px] uppercase tracking-wider text-[#72859d]">
             API Access
           </p>
-          <div className="space-y-4 rounded-2xl border border-gray-800/80 bg-[#1A1D24] p-4">
+          <div className="space-y-4 rounded-2xl border border-[#e1e8f1] bg-white p-4">
             <div>
-              <label className="mb-1.5 block font-mono text-xs text-gray-400">
+              <label className="mb-1.5 block font-mono text-xs text-[#72859d]">
                 Base URL
               </label>
-              <div className="w-full break-all rounded-xl border border-gray-800 bg-[#12141a] px-3.5 py-2.5 font-mono text-xs text-gray-200">
+              <div className="w-full break-all rounded-xl border border-[#e1e8f1] bg-[#f8fbff] px-3.5 py-2.5 font-mono text-xs text-[#344e6a]">
                 {API_BASE_URL ?? "VITE_API_BASE_URL is not configured"}
               </div>
             </div>
 
             <div>
-              <label className="mb-1.5 block font-mono text-xs text-gray-400">
+              <label className="mb-1.5 block font-mono text-xs text-[#72859d]">
                 API Version
               </label>
-              <div className="w-full rounded-xl border border-gray-800 bg-[#12141a] px-3.5 py-2.5 font-mono text-xs text-gray-200">
+              <div className="w-full rounded-xl border border-[#e1e8f1] bg-[#f8fbff] px-3.5 py-2.5 font-mono text-xs text-[#344e6a]">
                 {version}
               </div>
             </div>
@@ -346,7 +348,7 @@ export const Integration: React.FC = () => {
                 type="button"
                 disabled={!docsUrl}
                 onClick={() => docsUrl && window.open(docsUrl, "_blank")}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#252a36] py-3 text-xs font-medium text-indigo-300 transition-colors hover:bg-[#2d3342] disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#eef5fb] py-3 text-xs font-medium text-[#247fc5] transition-colors hover:bg-[#e7f2fd] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Globe size={15} />
                 Open API docs
@@ -356,17 +358,17 @@ export const Integration: React.FC = () => {
                 type="button"
                 onClick={() => void handleHealthCheck()}
                 disabled={isChecking}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-800 bg-[#161820] py-3 text-xs font-medium text-gray-300 transition-colors hover:border-gray-700 disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#e1e8f1] bg-white py-3 text-xs font-medium text-[#49637e] transition-colors hover:border-[#dce5ee] disabled:opacity-50"
               >
                 <RefreshCw
                   size={15}
-                  className={isChecking ? "animate-spin text-indigo-400" : ""}
+                  className={isChecking ? "animate-spin text-[#227cbd]" : ""}
                 />
                 {isChecking ? "Running checks..." : "Run health checks"}
               </button>
 
               {lastChecked && (
-                <p className="text-center text-[11px] text-gray-500">
+                <p className="text-center text-[11px] text-[#8193a7]">
                   Last checked {lastChecked.toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",

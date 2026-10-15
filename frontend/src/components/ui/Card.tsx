@@ -14,7 +14,7 @@ export function Card({
 }: CardProps) {
   return (
     <div
-      className={`rounded-[24px] border border-[#30343f] bg-[#22252c] ${className}`}
+      className={`cf-card ${className}`}
       {...props}
     >
       {children}

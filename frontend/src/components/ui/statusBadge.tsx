@@ -7,10 +7,10 @@ export default function StatusBadge({ status }: StatusBadgeProps) {
 
   const styles =
     normalized === "completed"
-      ? "bg-green-500/15 text-green-400"
+      ? "bg-[#e7f7ee] text-[#15845f]"
       : normalized === "invalid"
-        ? "bg-red-500/15 text-red-400"
-        : "bg-indigo-500/15 text-indigo-400";
+        ? "bg-[#fff0ed] text-[#b64641]"
+        : "bg-[#e9f4ff] text-[#227cbd]";
 
   return (
     <span

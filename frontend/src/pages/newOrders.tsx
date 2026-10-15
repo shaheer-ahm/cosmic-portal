@@ -443,17 +443,17 @@ export function NewOrderPage() {
     <AppShell>
       <PageHeader title="New Order" />
 
-      <main className="px-5 py-5">
+      <main className="cf-page">
         <Card className="p-5">
           <div className="flex items-center gap-3">
-            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#303654] text-[#7180ff]">
+            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#e7f3ff] text-[#2582ce]">
               <BoxIcon className="h-5 w-5" />
             </div>
 
             <div className="min-w-0 flex-1">
               <label
                 htmlFor="orderRef"
-                className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#747b98]"
+                className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#758ba2]"
               >
                 Order reference
               </label>
@@ -463,10 +463,10 @@ export function NewOrderPage() {
                 value={orderRef}
                 readOnly
                 placeholder="Generated after submission"
-                className="mt-1 w-full cursor-not-allowed bg-transparent text-xl font-bold text-white outline-none placeholder:text-[#666c80]"
+                className="mt-1 w-full cursor-not-allowed bg-transparent text-xl font-bold text-[#172f50] outline-none placeholder:text-[#94a5b8]"
               />
 
-              <p className="mt-1 text-xs text-[#666c80]">
+              <p className="mt-1 text-xs text-[#70839c]">
                 Assigned automatically by FitPortal when the order is created.
               </p>
             </div>
@@ -474,7 +474,7 @@ export function NewOrderPage() {
         </Card>
 
         {issues.length > 0 && (
-          <div className="mt-4 rounded-2xl border border-red-400/25 bg-red-400/10 p-4 text-sm text-red-200">
+          <div className="mt-4 rounded-2xl border border-[#f1ccc6] bg-[#fff1ef] p-4 text-sm text-[#b64641]">
             <p className="font-semibold">
               Fix these fields before
               submitting:
@@ -495,7 +495,7 @@ export function NewOrderPage() {
         )}
 
         {submitted && (
-          <div className="mt-4 rounded-2xl border border-green-400/25 bg-green-400/10 p-4 text-sm text-green-300">
+          <div className="mt-4 rounded-2xl border border-[#bfe9d2] bg-[#eaf9f0] p-4 text-sm text-[#137452]">
             Order saved successfully{orderRef ? ` as ${orderRef}` : ""}.
           </div>
         )}
@@ -503,7 +503,7 @@ export function NewOrderPage() {
         <button
           type="button"
           onClick={loadSamples}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-[#4a50a0] bg-[#2d3152] px-4 py-3 text-sm font-semibold text-[#98a0ff]"
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-[#b6d8f6] bg-[#eff7ff] px-4 py-3 text-sm font-semibold text-[#217fc7]"
         >
           <Sparkles className="h-4 w-4" />
 
@@ -513,11 +513,11 @@ export function NewOrderPage() {
         <section className="mt-7">
           <div className="mb-3 flex items-center justify-between gap-4">
             <div>
-              <p className="font-mono text-xs uppercase tracking-[0.2em] text-[#777d98]">
+              <p className="font-mono text-xs uppercase tracking-[0.2em] text-[#7187a0]">
                 Items
               </p>
 
-              <p className="mt-1 text-xs text-[#666c80]">
+              <p className="mt-1 text-xs text-[#70839c]">
                 Add the items that need
                 to be packed.
               </p>
@@ -527,13 +527,13 @@ export function NewOrderPage() {
               type="button"
               onClick={addItem}
               aria-label="Add item"
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#272b38] text-[#7b86ff]"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#e7f3ff] text-[#1b75bc]"
             >
               <Plus className="h-5 w-5" />
             </button>
           </div>
 
-          <div className="space-y-4">
+          <div className="cf-editor-grid">
             {items.map(
               (item, index) => (
                 <ItemEditor
@@ -556,7 +556,7 @@ export function NewOrderPage() {
             )}
 
             {items.length === 0 && (
-              <Card className="p-5 text-center text-sm text-[#747b8d]">
+              <Card className="p-5 text-center text-sm text-[#71849a]">
                 No items added.
               </Card>
             )}
@@ -566,11 +566,11 @@ export function NewOrderPage() {
         <section className="mt-8">
           <div className="mb-3 flex items-center justify-between gap-4">
             <div>
-              <p className="font-mono text-xs uppercase tracking-[0.2em] text-[#777d98]">
+              <p className="font-mono text-xs uppercase tracking-[0.2em] text-[#7187a0]">
                 Available box types
               </p>
 
-              <p className="mt-1 text-xs text-[#666c80]">
+              <p className="mt-1 text-xs text-[#70839c]">
                 Define which cartons may
                 be used for this order.
               </p>
@@ -580,13 +580,13 @@ export function NewOrderPage() {
               type="button"
               onClick={addBox}
               aria-label="Add box type"
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#272b38] text-[#7b86ff]"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#e7f3ff] text-[#1b75bc]"
             >
               <Plus className="h-5 w-5" />
             </button>
           </div>
 
-          <div className="space-y-4">
+          <div className="cf-editor-grid">
             {boxes.map(
               (box, index) => (
                 <BoxEditor
@@ -609,7 +609,7 @@ export function NewOrderPage() {
             )}
 
             {boxes.length === 0 && (
-              <Card className="p-5 text-center text-sm text-[#747b8d]">
+              <Card className="p-5 text-center text-sm text-[#71849a]">
                 No box types added.
               </Card>
             )}
@@ -619,7 +619,7 @@ export function NewOrderPage() {
         <button
           type="button"
           onClick={submit}
-          className="mt-7 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#6675ff] px-5 py-4 text-sm font-bold text-white"
+          className="mt-7 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#2686d5] px-5 py-4 text-sm font-bold text-white"
         >
           <Send className="h-4 w-4" />
 
