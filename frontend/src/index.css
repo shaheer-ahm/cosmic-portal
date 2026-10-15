@@ -121,8 +121,6 @@ a { text-decoration: none; }
     background:rgba(255,255,255,.98); border-top:1px solid #dce6ef; box-shadow:0 -5px 19px rgba(26,70,104,.05);
   }
   .cf-bottom-nav > a { flex:1; text-align:center; font-weight:650; }
-  .cf-bottom-nav > a:nth-child(3) { flex:0 0 57px; height:57px; width:57px; border-radius:13px; transform:translateY(-9px); }
-  .cf-bottom-nav > a:nth-child(3) svg { width:25px; height:25px; }
   .cf-page table th,.cf-page table td { padding:12px 10px; }
   .cf-card { border-radius:11px; }
   .cf-top-header .hidden.sm\:flex { display:none; }

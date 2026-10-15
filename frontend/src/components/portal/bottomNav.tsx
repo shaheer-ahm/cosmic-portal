@@ -49,9 +49,10 @@ export default function BottomNav() {
       <Link
         to="/orders/new"
         aria-label="Create new order"
-        className="grid h-16 w-16 -translate-y-4 place-items-center rounded-full bg-[#2686d5] text-white shadow-[0_8px_22px_rgba(21,113,191,0.22)]"
+        className="flex flex-col items-center justify-center gap-1 text-[11px] font-semibold text-[#6e8199]"
       >
-        <Plus className="h-8 w-8" />
+        <Plus className="h-6 w-6" />
+        <span>New order</span>
       </Link>
 
       <Link
