@@ -46,8 +46,8 @@ export default function BoxDetailRoute() {
     if (error || boxIndex === null) {
         return (
             <AppShell showBottomNav={false}>
-                <main className="px-5 py-10">
-                    <Card className="p-5 text-center text-sm text-red-400">
+                <main className="cf-page">
+                    <Card className="p-5 text-center text-sm text-[#b64641]">
                         {error || "Box not found."}
                     </Card>
                 </main>
@@ -58,7 +58,7 @@ export default function BoxDetailRoute() {
     if (!response) {
         return (
             <AppShell showBottomNav={false}>
-                <main className="px-5 py-10 text-center text-sm text-[#777d92]">
+                <main className="px-5 py-10 text-center text-sm text-[#6a7f99]">
                     Loading…
                 </main>
             </AppShell>

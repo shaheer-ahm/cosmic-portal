@@ -123,9 +123,9 @@ export function DashboardPage() {
   if (loading) {
     return (
       <AppShell>
-        <BrandHeader title="Dashboard" />
+        <BrandHeader title="Packing overview" />
 
-        <main className="px-5 py-10 text-center text-sm text-[#777d92]">
+        <main className="px-5 py-10 text-center text-sm text-[#6a7f99]">
           Loading dashboard...
         </main>
       </AppShell>
@@ -135,15 +135,15 @@ export function DashboardPage() {
   if (error || !summary) {
     return (
       <AppShell>
-        <BrandHeader title="Dashboard" />
+        <BrandHeader title="Packing overview" />
 
-        <main className="px-5 py-5">
+        <main className="cf-page">
           <Card className="p-5 text-center">
-            <p className="text-sm font-semibold text-red-400">
+            <p className="text-sm font-semibold text-[#b64641]">
               Unable to load dashboard
             </p>
 
-            <p className="mt-2 text-xs text-[#777d92]">
+            <p className="mt-2 text-xs text-[#6a7f99]">
               {error}
             </p>
           </Card>
@@ -178,10 +178,10 @@ export function DashboardPage() {
 
   return (
     <AppShell>
-      <BrandHeader title="Dashboard" />
+      <BrandHeader title="Packing overview" />
 
-      <main className="px-5 py-5 pb-24">
-        <p className="font-mono text-xs uppercase tracking-[0.2em] text-[#777d98]">
+      <main className="cf-page">
+        <p className="font-mono text-xs uppercase tracking-[0.2em] text-[#7187a0]">
           Live portal data
         </p>
 
@@ -189,39 +189,39 @@ export function DashboardPage() {
         <Card className="mt-5 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-mono text-sm text-[#777d98]">
+              <p className="font-mono text-sm text-[#7187a0]">
                 Total orders
               </p>
 
-              <p className="mt-3 text-5xl font-bold text-white">
+              <p className="mt-3 text-5xl font-bold text-[#172f50]">
                 {summary.total_orders}
               </p>
             </div>
 
-            <div className="grid h-16 w-16 place-items-center rounded-2xl bg-[#303654] text-[#7180ff]">
+            <div className="grid h-16 w-16 place-items-center rounded-2xl bg-[#e7f3ff] text-[#2582ce]">
               <ClipboardList className="h-8 w-8" />
             </div>
           </div>
         </Card>
 
         {/* Status summary */}
-        <div className="mt-4 grid grid-cols-2 gap-4">
+        <div className="mt-4 grid grid-cols-2 gap-4 cf-dashboard-secondary">
           <Card className="p-5">
             <div className="flex items-start justify-between">
               <div>
-                <p className="font-mono text-xs text-[#777d98]">
+                <p className="font-mono text-xs text-[#7187a0]">
                   Completed
                 </p>
 
-                <p className="mt-4 text-4xl font-bold text-green-400">
+                <p className="mt-4 text-4xl font-bold text-[#15845f]">
                   {completed}
                 </p>
               </div>
 
-              <CheckCircle2 className="h-5 w-5 text-green-400" />
+              <CheckCircle2 className="h-5 w-5 text-[#15845f]" />
             </div>
 
-            <p className="mt-4 font-mono text-xs text-[#777d98]">
+            <p className="mt-4 font-mono text-xs text-[#7187a0]">
               {completedRate}% rate
             </p>
           </Card>
@@ -229,19 +229,19 @@ export function DashboardPage() {
           <Card className="p-5">
             <div className="flex items-start justify-between">
               <div>
-                <p className="font-mono text-xs text-[#777d98]">
+                <p className="font-mono text-xs text-[#7187a0]">
                   Invalid
                 </p>
 
-                <p className="mt-4 text-4xl font-bold text-red-400">
+                <p className="mt-4 text-4xl font-bold text-[#b64641]">
                   {invalid}
                 </p>
               </div>
 
-              <XCircle className="h-5 w-5 text-red-400" />
+              <XCircle className="h-5 w-5 text-[#b64641]" />
             </div>
 
-            <p className="mt-4 font-mono text-xs text-[#777d98]">
+            <p className="mt-4 font-mono text-xs text-[#7187a0]">
               {invalidRate}% rate
             </p>
           </Card>
@@ -250,7 +250,7 @@ export function DashboardPage() {
         {/* Recent orders */}
         <section className="mt-8">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-mono text-xs uppercase tracking-[0.2em] text-[#777d98]">
+            <h2 className="font-mono text-xs uppercase tracking-[0.2em] text-[#7187a0]">
               Recent Orders
             </h2>
 
@@ -259,7 +259,7 @@ export function DashboardPage() {
               onClick={() =>
                 navigate("/orders")
               }
-              className="font-mono text-sm text-[#7b86ff]"
+              className="font-mono text-sm text-[#1b75bc]"
             >
               View all →
             </button>
@@ -267,7 +267,7 @@ export function DashboardPage() {
 
           <div className="space-y-3">
             {recentOrders.length === 0 ? (
-              <Card className="p-6 text-center text-sm text-[#777d92]">
+              <Card className="p-6 text-center text-sm text-[#6a7f99]">
                 No orders yet.
               </Card>
             ) : (
@@ -280,7 +280,7 @@ export function DashboardPage() {
                 return (
                   <Card
                     key={order.id}
-                    className="cursor-pointer p-4 transition-colors hover:border-[#383d52]"
+                    className="cursor-pointer p-4 transition-colors hover:border-[#b4d4ee]"
                     onClick={() =>
                       navigate(
                         `/orders/${order.id}`,
@@ -289,7 +289,7 @@ export function DashboardPage() {
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <h3 className="text-base font-bold text-white">
+                        <h3 className="text-base font-bold text-[#172f50]">
                           {order.reference}
                         </h3>
 
@@ -298,10 +298,10 @@ export function DashboardPage() {
                         />
                       </div>
 
-                      <ChevronRight className="h-5 w-5 text-[#777d92]" />
+                      <ChevronRight className="h-5 w-5 text-[#6a7f99]" />
                     </div>
 
-                    <div className="mt-3 flex items-center justify-between text-xs text-[#777d92]">
+                    <div className="mt-3 flex items-center justify-between text-xs text-[#6a7f99]">
                       <div className="flex items-center gap-4">
                         <span className="flex items-center gap-1.5">
                           <Package className="h-3.5 w-3.5" />

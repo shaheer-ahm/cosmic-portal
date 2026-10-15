@@ -20,12 +20,12 @@ export const MenuDrawer: React.FC = () => {
   }, []);
 
   return (
-    <div className="relative" ref={menuRef}>
+    <div className="relative cf-mobile-menu" ref={menuRef}>
       {/* Hamburger Toggle Button */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="grid h-12 w-12 place-items-center rounded-xl border border-[#383b44] bg-[#23252b] text-[#d3d4db] transition hover:bg-[#2e323f] hover:text-white focus:outline-none focus:ring-2 focus:ring-[#6675ff]"
+        className="grid h-11 w-11 place-items-center rounded-lg border border-[#dbe5ee] bg-white text-[#28415e] transition hover:bg-[#edf4fb] hover:text-[#146fae] focus:outline-none focus:ring-2 focus:ring-[#60b0e8]"
         aria-label="Toggle navigation menu"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -35,38 +35,38 @@ export const MenuDrawer: React.FC = () => {
 
       {/* Slide-out Menu Dropdown */}
       {isOpen && (
-        <div className="absolute left-0 mt-2 w-56 rounded-xl border border-[#383b44] bg-[#23252b] py-2 shadow-xl z-50">
-          <div className="border-b border-[#383b44] px-4 py-2 font-mono text-xs uppercase tracking-wider text-[#747b98]">
+        <div className="absolute left-0 mt-2 w-60 rounded-xl border border-[#dbe5ee] bg-white py-2 shadow-lg z-50">
+          <div className="border-b border-[#dbe5ee] px-4 py-2 font-mono text-xs uppercase tracking-wider text-[#758ba2]">
             Navigation Menu
           </div>
           <Link
             to="/dashboard"
             onClick={() => setIsOpen(false)}
-            className="block px-4 py-2.5 text-sm text-[#d3d4db] transition hover:bg-[#2e323f] hover:text-white"
+            className="block px-4 py-2.5 text-sm text-[#28415e] transition hover:bg-[#edf4fb] hover:text-[#146fae]"
           >
             Dashboard
           </Link>
           <Link
             to="/integration"
             onClick={() => setIsOpen(false)}
-            className="block px-4 py-2.5 text-sm text-[#d3d4db] transition hover:bg-[#2e323f] hover:text-white"
+            className="block px-4 py-2.5 text-sm text-[#28415e] transition hover:bg-[#edf4fb] hover:text-[#146fae]"
           >
             System Integration
           </Link>
           <Link
             to="/orders"
             onClick={() => setIsOpen(false)}
-            className="block px-4 py-2.5 text-sm text-[#d3d4db] transition hover:bg-[#2e323f] hover:text-white"
+            className="block px-4 py-2.5 text-sm text-[#28415e] transition hover:bg-[#edf4fb] hover:text-[#146fae]"
           >
             Orders
           </Link>
           {/* Supervisor & Admin Only Link */}
           <RoleGuard currentRole={role} allowedRoles={["supervisor", "admin"]}>
-            <div className="my-1 border-t border-[#383b44]" />
+            <div className="my-1 border-t border-[#dbe5ee]" />
             <Link
               to="/profiles"
               onClick={() => setIsOpen(false)}
-              className="block px-4 py-2.5 text-sm text-purple-300 font-medium transition hover:bg-purple-900/30 hover:text-purple-200"
+              className="block px-4 py-2.5 text-sm text-[#227cbd] font-medium transition hover:bg-[#e6f3ff] hover:text-[#166da8]"
             >
               Profiles Management
             </Link>

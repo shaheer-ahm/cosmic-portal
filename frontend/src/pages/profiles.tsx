@@ -60,21 +60,21 @@ export default function ProfileManagementPage() {
 
   return (
     <AppShell>
-      <div className="p-6">
+      <div className="cf-page">
         <PageHeader
           title="Supervisor Dashboard"
         //   description="Manage user roles and permissions"
         />
 
-        <div className="mt-6 rounded-xl border border-white/10 bg-[#12161f] p-6 text-white shadow-xl">
+        <div className="mt-6 rounded-xl border border-[#dce5ee] bg-white p-6 text-[#172f50] shadow-xl">
           <h2 className="mb-4 text-xl font-bold">User Access Management</h2>
 
           {loading ? (
-            <p className="text-gray-400">Loading user profiles...</p>
+            <p className="text-[#72859d]">Loading user profiles...</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm text-gray-300">
-                <thead className="border-b border-white/10 text-xs uppercase text-gray-400 bg-white/5">
+              <table className="w-full text-left text-sm text-[#49637e]">
+                <thead className="border-b border-[#dce5ee] text-xs uppercase text-[#72859d] bg-[#f4f7fa]">
                   <tr>
                     <th className="px-4 py-3">User Email</th>
                     <th className="px-4 py-3">Role</th>
@@ -84,20 +84,20 @@ export default function ProfileManagementPage() {
                 <tbody className="divide-y divide-white/5">
                   {profiles.length === 0 ? (
                     <tr>
-                      <td colSpan={3} className="px-4 py-6 text-center text-gray-400">
+                      <td colSpan={3} className="px-4 py-6 text-center text-[#72859d]">
                         No profiles found.
                       </td>
                     </tr>
                   ) : (
                     profiles.map((p) => (
-                      <tr key={p.id} className="hover:bg-white/5">
-                        <td className="px-4 py-3 font-medium text-white">{p.email}</td>
+                      <tr key={p.id} className="hover:bg-[#f4f7fa]">
+                        <td className="px-4 py-3 font-medium text-[#172f50]">{p.email}</td>
                         <td className="px-4 py-3">
                           <span
                             className={`inline-block rounded-full px-2.5 py-1 text-xs font-semibold ${
                               p.role === "supervisor"
-                                ? "bg-purple-900/40 text-purple-300 border border-purple-500/30"
-                                : "bg-blue-900/40 text-blue-300 border border-blue-500/30"
+                                ? "bg-[#e7f3ff] text-[#227cbd] border border-[#cce4f6]"
+                                : "bg-[#edf6ff] text-[#226aa6] border border-[#d3e6f6]"
                             }`}
                           >
                             {p.role}
@@ -110,7 +110,7 @@ export default function ProfileManagementPage() {
                             onChange={(e) =>
                               handleRoleChange(p.id, e.target.value as UserRole)
                             }
-                            className="rounded border border-white/20 bg-[#090b10] px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="rounded border border-[#dce5ee] bg-[#f3f6fa] px-3 py-1.5 text-xs text-[#172f50] focus:outline-none focus:ring-2 focus:ring-[#60b0e8]"
                           >
                             <option value="user">User</option>
                             <option value="supervisor">Supervisor</option>

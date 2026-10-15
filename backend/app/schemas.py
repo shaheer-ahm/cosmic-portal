@@ -3,6 +3,8 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
 
+
+
 class ItemBase(BaseModel):
     ItemCode: str
     ItemReference: str
@@ -13,6 +15,9 @@ class ItemBase(BaseModel):
     Weight: float = Field(ge=0)
     Quantity: Optional[int] = None
     KeepUpright: Optional[bool] = None
+    Fragile: bool = False
+
+
 
 class ItemCreate(ItemBase):
     pass

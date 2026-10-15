@@ -1,4 +1,5 @@
-import { Trash2 } from "lucide-react";
+
+import { Trash2, PackageCheck } from "lucide-react";
 import type { PackerItem } from "../../types/domain";
 import { Card } from "../ui/Card";
 import { Field } from "./Field";
@@ -23,11 +24,11 @@ export function ItemEditor({
     <Card className="p-4">
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[#707793]">
+          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[#72879d]">
             Item {index + 1}
           </p>
 
-          <h3 className="mt-1 text-sm font-semibold text-white">
+          <h3 className="mt-1 text-sm font-semibold text-[#172f50]">
             {item.ItemReference || "New item"}
           </h3>
         </div>
@@ -35,14 +36,15 @@ export function ItemEditor({
         <button
           type="button"
           onClick={onRemove}
-          className="grid h-9 w-9 place-items-center rounded-xl text-[#777d8c] hover:bg-red-400/10 hover:text-red-300"
+          aria-label={`Remove item ${index + 1}`}
+          className="grid h-9 w-9 place-items-center rounded-xl text-[#71849a] hover:bg-[#fff1ef] hover:text-[#b64641]"
         >
           <Trash2 className="h-4 w-4" />
         </button>
       </div>
 
       <div className="grid gap-4">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field
             label="Item code"
             value={item.ItemCode}
@@ -68,7 +70,7 @@ export function ItemEditor({
           />
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="cf-measure-grid">
           <Field
             label="Width"
             type="number"
@@ -112,7 +114,7 @@ export function ItemEditor({
           />
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="cf-measure-grid">
           <Field
             label="Weight"
             type="number"
@@ -152,9 +154,51 @@ export function ItemEditor({
                   event.target.value || undefined,
               })
             }
-            placeholder="GROUP-A"
+            placeholder="Optional"
           />
         </div>
+
+        <label
+          className={`flex cursor-pointer items-center justify-between gap-3 rounded-xl border p-4 transition-colors ${
+            item.Fragile
+              ? "border-[#ecc8a0] bg-[#fff8ee]"
+              : "border-[#dce6ef] bg-[#f8fbff]"
+          }`}
+        >
+          <div className="flex min-w-0 items-center gap-3">
+            <div
+              className={`grid h-10 w-10 shrink-0 place-items-center rounded-lg ${
+                item.Fragile
+                  ? "bg-[#ffecd3] text-[#ab6b27]"
+                  : "bg-[#e7f3ff] text-[#2582ce]"
+              }`}
+            >
+              <PackageCheck className="h-5 w-5" />
+            </div>
+
+            <div>
+              <p className="text-sm font-semibold text-[#172f50]">
+                Fragile item
+              </p>
+              <p className="mt-1 text-xs text-[#71849a]">
+                Mark this item as requiring careful handling.
+              </p>
+            </div>
+          </div>
+
+          <input
+            type="checkbox"
+            checked={item.Fragile ?? false}
+            onChange={(event) =>
+              onChange({
+                ...item,
+                Fragile: event.target.checked,
+              })
+            }
+            className="h-5 w-5 shrink-0 cursor-pointer accent-[#2686d5]"
+            aria-label={`Fragile item ${index + 1}`}
+          />
+        </label>
       </div>
     </Card>
   );
