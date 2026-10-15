@@ -1,9 +1,15 @@
-import { Box as BoxIcon, Plus, Send, Sparkles } from "lucide-react";
-import { useState } from "react";
+
+import {
+  Box as BoxIcon,
+  Plus,
+  Send,
+  Sparkles,
+  RefreshCw,
+} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 
 import { AppShell } from "../components/layout/AppShell";
 import { PageHeader } from "../components/layout/PageHeader";
-import { BoxEditor } from "../components/orders/BoxEditor";
 import { ItemEditor } from "../components/orders/ItemEditor";
 import { Card } from "../components/ui/Card";
 import { apiFetch } from "../lib/api";
@@ -19,17 +25,7 @@ const blankItem = (): PackerItem => ({
   Weight: 0,
   Quantity: 1,
   BoxGroup: "",
-});
-
-const blankBox = (): BoxType => ({
-  Reference: "",
-  Width: 0,
-  Length: 0,
-  Depth: 0,
-  MaxWeight: undefined,
-  BoxWeight: undefined,
-  Active: true,
-  MaximumBoxes: undefined,
+  Fragile: false,
 });
 
 const sampleItems: PackerItem[] = [
@@ -42,6 +38,7 @@ const sampleItems: PackerItem[] = [
     Weight: 1,
     Quantity: 1,
     BoxGroup: "GROUP-A",
+    Fragile: false,
   },
   {
     ItemCode: "ITM-002",
@@ -51,6 +48,7 @@ const sampleItems: PackerItem[] = [
     Depth: 75,
     Weight: 2.8,
     Quantity: 1,
+    Fragile: false,
   },
   {
     ItemCode: "ITM-003",
@@ -61,86 +59,85 @@ const sampleItems: PackerItem[] = [
     Weight: 0.82,
     Quantity: 1,
     BoxGroup: "GROUP-B",
-  },
-];
-
-const sampleBoxes: BoxType[] = [
-  {
-    Reference: "SML",
-    Width: 150,
-    Length: 150,
-    Depth: 150,
-    MaxWeight: 8.5,
-    BoxWeight: 0.5,
-    Active: true,
-    MaximumBoxes: 100,
-  },
-  {
-    Reference: "MED",
-    Width: 400,
-    Length: 400,
-    Depth: 400,
-    MaxWeight: 15.2,
-    BoxWeight: 0.75,
-    Active: true,
-  },
-  {
-    Reference: "LRG",
-    Width: 1200,
-    Length: 1200,
-    Depth: 1200,
-    Active: false,
+    Fragile: true,
   },
 ];
 
 export function NewOrderPage() {
   const [orderRef, setOrderRef] = useState("");
-
   const [items, setItems] = useState<PackerItem[]>([
     blankItem(),
   ]);
 
-  const [boxes, setBoxes] = useState<BoxType[]>([
-    blankBox(),
-  ]);
+  const [boxes, setBoxes] = useState<BoxType[]>([]);
+  const [loadingBoxes, setLoadingBoxes] = useState(true);
+  const [boxError, setBoxError] = useState<string | null>(
+    null
+  );
 
   const [issues, setIssues] = useState<string[]>([]);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Get the current carton catalogue from FitPortal.
+  // No carton dimensions are hardcoded in the frontend.
+  const loadBoxes = useCallback(async () => {
+    setLoadingBoxes(true);
+    setBoxError(null);
+
+    try {
+      const available = await apiFetch<BoxType[]>(
+        "/box-types/"
+      );
+
+      const active = available.filter(
+        (box) => box.Active !== false
+      );
+
+      setBoxes(active);
+
+      if (active.length === 0) {
+        setBoxError(
+          "No active carton types are configured. " +
+            "Please contact a supervisor."
+        );
+      }
+    } catch (error) {
+      setBoxes([]);
+      setBoxError(
+        error instanceof Error
+          ? error.message
+          : "Unable to load available carton types."
+      );
+    } finally {
+      setLoadingBoxes(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadBoxes();
+  }, [loadBoxes]);
 
   const loadSamples = () => {
-    setItems(
-      sampleItems.map((item) => ({
-        ...item,
-      })),
-    );
-
-    setBoxes(
-      sampleBoxes.map((box) => ({
-        ...box,
-      })),
-    );
-
+    setItems(sampleItems.map((item) => ({ ...item })));
+    setOrderRef("");
     setIssues([]);
     setSubmitted(false);
   };
 
   const addItem = () => {
-    setItems((current) => [
-      ...current,
-      blankItem(),
-    ]);
-
+    setItems((current) => [...current, blankItem()]);
     setSubmitted(false);
   };
 
   const updateItem = (
     index: number,
-    updatedItem: PackerItem,
+    updatedItem: PackerItem
   ) => {
     setItems((current) =>
       current.map((item, itemIndex) =>
-        itemIndex === index ? updatedItem : item,
-      ),
+        itemIndex === index ? updatedItem : item
+      )
     );
 
     setSubmitted(false);
@@ -148,41 +145,7 @@ export function NewOrderPage() {
 
   const removeItem = (index: number) => {
     setItems((current) =>
-      current.filter(
-        (_, itemIndex) => itemIndex !== index,
-      ),
-    );
-
-    setSubmitted(false);
-  };
-
-  const addBox = () => {
-    setBoxes((current) => [
-      ...current,
-      blankBox(),
-    ]);
-
-    setSubmitted(false);
-  };
-
-  const updateBox = (
-    index: number,
-    updatedBox: BoxType,
-  ) => {
-    setBoxes((current) =>
-      current.map((box, boxIndex) =>
-        boxIndex === index ? updatedBox : box,
-      ),
-    );
-
-    setSubmitted(false);
-  };
-
-  const removeBox = (index: number) => {
-    setBoxes((current) =>
-      current.filter(
-        (_, boxIndex) => boxIndex !== index,
-      ),
+      current.filter((_, itemIndex) => itemIndex !== index)
     );
 
     setSubmitted(false);
@@ -192,9 +155,7 @@ export function NewOrderPage() {
     const errors: string[] = [];
 
     if (items.length === 0) {
-      errors.push(
-        "At least one item is required.",
-      );
+      errors.push("At least one item is required.");
     }
 
     items.forEach((item, index) => {
@@ -202,37 +163,49 @@ export function NewOrderPage() {
 
       if (!item.ItemCode.trim()) {
         errors.push(
-          `Item ${number}: Item code is required.`,
+          `Item ${number}: Item code is required.`
         );
       }
 
       if (!item.ItemReference.trim()) {
         errors.push(
-          `Item ${number}: Item reference is required.`,
+          `Item ${number}: Item reference is required.`
         );
       }
 
-      if (item.Width <= 0) {
+      if (
+        !Number.isInteger(item.Width) ||
+        item.Width <= 0
+      ) {
         errors.push(
-          `Item ${number}: Width must be greater than 0.`,
+          `Item ${number}: Width must be a positive whole number.`
         );
       }
 
-      if (item.Length <= 0) {
+      if (
+        !Number.isInteger(item.Length) ||
+        item.Length <= 0
+      ) {
         errors.push(
-          `Item ${number}: Length must be greater than 0.`,
+          `Item ${number}: Length must be a positive whole number.`
         );
       }
 
-      if (item.Depth <= 0) {
+      if (
+        !Number.isInteger(item.Depth) ||
+        item.Depth <= 0
+      ) {
         errors.push(
-          `Item ${number}: Depth must be greater than 0.`,
+          `Item ${number}: Depth must be a positive whole number.`
         );
       }
 
-      if (item.Weight < 0) {
+      if (
+        !Number.isFinite(item.Weight) ||
+        item.Weight < 0
+      ) {
         errors.push(
-          `Item ${number}: Weight cannot be negative.`,
+          `Item ${number}: Weight cannot be negative.`
         );
       }
 
@@ -241,110 +214,30 @@ export function NewOrderPage() {
         item.Quantity < 1
       ) {
         errors.push(
-          `Item ${number}: Quantity must be a whole number of at least 1.`,
+          `Item ${number}: Quantity must be a whole number of at least 1.`
         );
       }
     });
 
     const itemCodes = items
-      .map((item) =>
-        item.ItemCode.trim().toUpperCase(),
-      )
+      .map((item) => item.ItemCode.trim().toUpperCase())
       .filter(Boolean);
 
-    if (
-      new Set(itemCodes).size !==
-      itemCodes.length
-    ) {
-      errors.push(
-        "Item codes must be unique.",
-      );
+    if (new Set(itemCodes).size !== itemCodes.length) {
+      errors.push("Item codes must be unique.");
     }
 
-    if (boxes.length === 0) {
+    if (loadingBoxes) {
       errors.push(
-        "At least one box type is required.",
+        "Wait for available carton types to load."
       );
-    }
-
-    boxes.forEach((box, index) => {
-      const number = index + 1;
-
-      if (!box.Reference.trim()) {
-        errors.push(
-          `Box ${number}: Reference is required.`,
-        );
-      }
-
-      if (box.Width <= 0) {
-        errors.push(
-          `Box ${number}: Width must be greater than 0.`,
-        );
-      }
-
-      if (box.Length <= 0) {
-        errors.push(
-          `Box ${number}: Length must be greater than 0.`,
-        );
-      }
-
-      if (box.Depth <= 0) {
-        errors.push(
-          `Box ${number}: Depth must be greater than 0.`,
-        );
-      }
-
-      if (
-        box.MaxWeight !== undefined &&
-        box.MaxWeight <= 0
-      ) {
-        errors.push(
-          `Box ${number}: Maximum weight must be greater than 0.`,
-        );
-      }
-
-      if (
-        box.BoxWeight !== undefined &&
-        box.BoxWeight < 0
-      ) {
-        errors.push(
-          `Box ${number}: Box weight cannot be negative.`,
-        );
-      }
-
-      if (
-        box.MaximumBoxes !== undefined &&
-        box.MaximumBoxes < 1
-      ) {
-        errors.push(
-          `Box ${number}: Maximum boxes must be at least 1.`,
-        );
-      }
-    });
-
-    const boxReferences = boxes
-      .map((box) =>
-        box.Reference.trim().toUpperCase(),
-      )
-      .filter(Boolean);
-
-    if (
-      new Set(boxReferences).size !==
-      boxReferences.length
-    ) {
+    } else if (boxError) {
       errors.push(
-        "Box references must be unique.",
+        "Available carton types could not be loaded."
       );
-    }
-
-    if (
-      boxes.length > 0 &&
-      !boxes.some(
-        (box) => box.Active !== false,
-      )
-    ) {
+    } else if (boxes.length === 0) {
       errors.push(
-        "At least one box type must be active.",
+        "At least one active carton type is required."
       );
     }
 
@@ -352,24 +245,28 @@ export function NewOrderPage() {
   };
 
   const submit = async () => {
+    if (submitting) return;
+
     const validationErrors = validateForm();
 
     if (validationErrors.length > 0) {
       setIssues(validationErrors);
       setSubmitted(false);
-
       window.scrollTo({
         top: 0,
         behavior: "smooth",
       });
-
       return;
     }
 
     setIssues([]);
+    setSubmitting(true);
+    setSubmitted(false);
+
+    let createdOrderId: number | null = null;
 
     try {
-      // 1. Create the order
+      // 1. Create an empty order.
       const createdOrder = await apiFetch<{
         order_id: number;
         status: string;
@@ -379,7 +276,9 @@ export function NewOrderPage() {
         body: JSON.stringify({}),
       });
 
-      // 2. Add every item to that order
+      createdOrderId = createdOrder.order_id;
+
+      // 2. Add every item, including Fragile metadata.
       await Promise.all(
         items.map((item) =>
           apiFetch(
@@ -396,41 +295,51 @@ export function NewOrderPage() {
                 Quantity: item.Quantity,
                 BoxGroup:
                   item.BoxGroup?.trim() || null,
+                Fragile: item.Fragile ?? false,
               }),
-            },
-          ),
-        ),
+            }
+          )
+        )
       );
-      // 3. Attach selected box types to the order
+
+      // 3. Automatically assign all active carton
+      // types using references from the database.
       await apiFetch(
         `/orders/${createdOrder.order_id}/box-types`,
         {
           method: "POST",
           body: JSON.stringify({
-            references: boxes
-              .filter((box) => box.Active !== false)
-              .map((box) => box.Reference.trim()),
+            references: boxes.map(
+              (box) => box.Reference
+            ),
           }),
-        },
+        }
       );
 
       setOrderRef(`ORD-${createdOrder.order_id}`);
       setSubmitted(true);
 
       console.log(
-        "ORDER + ITEMS SAVED:",
-        createdOrder.order_id,
+        "ORDER + ITEMS + BOX TYPES SAVED:",
+        createdOrder.order_id
       );
     } catch (error) {
       console.error("Failed to submit order:", error);
 
-      setIssues([
+      const message =
         error instanceof Error
           ? error.message
-          : "Failed to submit order.",
+          : "Failed to submit order.";
+
+      setIssues([
+        createdOrderId !== null
+          ? `Order ${createdOrderId} was created, but saving its details failed: ${message}. Check the Orders page before retrying.`
+          : message,
       ]);
 
       setSubmitted(false);
+    } finally {
+      setSubmitting(false);
     }
 
     window.scrollTo({
@@ -467,46 +376,47 @@ export function NewOrderPage() {
               />
 
               <p className="mt-1 text-xs text-[#70839c]">
-                Assigned automatically by FitPortal when the order is created.
+                Assigned automatically by FitPortal.
               </p>
             </div>
           </div>
         </Card>
 
         {issues.length > 0 && (
-          <div className="mt-4 rounded-2xl border border-[#f1ccc6] bg-[#fff1ef] p-4 text-sm text-[#b64641]">
+          <div
+            role="alert"
+            className="mt-4 rounded-2xl border border-[#f1ccc6] bg-[#fff1ef] p-4 text-sm text-[#b64641]"
+          >
             <p className="font-semibold">
-              Fix these fields before
-              submitting:
+              Fix these issues before submitting:
             </p>
 
             <ul className="mt-2 list-disc space-y-1 pl-5">
-              {issues.map(
-                (issue, index) => (
-                  <li
-                    key={`${issue}-${index}`}
-                  >
-                    {issue}
-                  </li>
-                ),
-              )}
+              {issues.map((issue, index) => (
+                <li key={`${issue}-${index}`}>
+                  {issue}
+                </li>
+              ))}
             </ul>
           </div>
         )}
 
         {submitted && (
-          <div className="mt-4 rounded-2xl border border-[#bfe9d2] bg-[#eaf9f0] p-4 text-sm text-[#137452]">
-            Order saved successfully{orderRef ? ` as ${orderRef}` : ""}.
+          <div
+            role="status"
+            className="mt-4 rounded-2xl border border-[#bfe9d2] bg-[#eaf9f0] p-4 text-sm text-[#137452]"
+          >
+            Order saved successfully as {orderRef}.
           </div>
         )}
 
         <button
           type="button"
           onClick={loadSamples}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-[#b6d8f6] bg-[#eff7ff] px-4 py-3 text-sm font-semibold text-[#217fc7]"
+          disabled={submitting}
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-[#b6d8f6] bg-[#eff7ff] px-4 py-3 text-sm font-semibold text-[#217fc7] disabled:opacity-50"
         >
           <Sparkles className="h-4 w-4" />
-
           Load sample data
         </button>
 
@@ -518,42 +428,33 @@ export function NewOrderPage() {
               </p>
 
               <p className="mt-1 text-xs text-[#70839c]">
-                Add the items that need
-                to be packed.
+                Add the items that need to be packed.
               </p>
             </div>
 
             <button
               type="button"
               onClick={addItem}
+              disabled={submitting}
               aria-label="Add item"
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#e7f3ff] text-[#1b75bc]"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#e7f3ff] text-[#1b75bc] disabled:opacity-50"
             >
               <Plus className="h-5 w-5" />
             </button>
           </div>
 
           <div className="cf-editor-grid">
-            {items.map(
-              (item, index) => (
-                <ItemEditor
-                  key={index}
-                  item={item}
-                  index={index}
-                  onChange={(
-                    updatedItem,
-                  ) =>
-                    updateItem(
-                      index,
-                      updatedItem,
-                    )
-                  }
-                  onRemove={() =>
-                    removeItem(index)
-                  }
-                />
-              ),
-            )}
+            {items.map((item, index) => (
+              <ItemEditor
+                key={index}
+                item={item}
+                index={index}
+                onChange={(updatedItem) =>
+                  updateItem(index, updatedItem)
+                }
+                onRemove={() => removeItem(index)}
+              />
+            ))}
 
             {items.length === 0 && (
               <Card className="p-5 text-center text-sm text-[#71849a]">
@@ -564,69 +465,114 @@ export function NewOrderPage() {
         </section>
 
         <section className="mt-8">
-          <div className="mb-3 flex items-center justify-between gap-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="font-mono text-xs uppercase tracking-[0.2em] text-[#7187a0]">
-                Available box types
+                Available carton types
               </p>
 
               <p className="mt-1 text-xs text-[#70839c]">
-                Define which cartons may
-                be used for this order.
+                Managed by FitPortal and automatically
+                assigned to new orders.
               </p>
             </div>
 
             <button
               type="button"
-              onClick={addBox}
-              aria-label="Add box type"
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#e7f3ff] text-[#1b75bc]"
+              onClick={() => void loadBoxes()}
+              disabled={loadingBoxes || submitting}
+              className="flex items-center gap-2 rounded-xl border border-[#d8e5f1] bg-white px-3 py-2 text-xs font-semibold text-[#217fc7] disabled:opacity-50"
             >
-              <Plus className="h-5 w-5" />
+              <RefreshCw
+                className={`h-4 w-4 ${
+                  loadingBoxes ? "animate-spin" : ""
+                }`}
+              />
+              Refresh
             </button>
           </div>
 
-          <div className="cf-editor-grid">
-            {boxes.map(
-              (box, index) => (
-                <BoxEditor
-                  key={index}
-                  box={box}
-                  index={index}
-                  onChange={(
-                    updatedBox,
-                  ) =>
-                    updateBox(
-                      index,
-                      updatedBox,
-                    )
-                  }
-                  onRemove={() =>
-                    removeBox(index)
-                  }
-                />
-              ),
-            )}
+          <Card className="p-5">
+            {loadingBoxes ? (
+              <p
+                role="status"
+                className="text-sm text-[#71849a]"
+              >
+                Loading carton types...
+              </p>
+            ) : boxError ? (
+              <p
+                role="alert"
+                className="text-sm text-[#b64641]"
+              >
+                {boxError}
+              </p>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm font-semibold text-[#172f50]">
+                  {boxes.length} active carton
+                  {boxes.length === 1 ? "" : " types"}
+                </p>
 
-            {boxes.length === 0 && (
-              <Card className="p-5 text-center text-sm text-[#71849a]">
-                No box types added.
-              </Card>
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {boxes.map((box) => (
+                    <div
+                      key={box.Reference}
+                      className="rounded-xl border border-[#dce6ef] bg-[#f8fbff] p-4"
+                    >
+                      <div className="flex items-center gap-2">
+                        <BoxIcon className="h-4 w-4 text-[#2686d5]" />
+
+                        <p className="text-sm font-bold text-[#172f50]">
+                          {box.Reference}
+                        </p>
+                      </div>
+
+                      <p className="mt-2 text-xs text-[#71849a]">
+                        {box.Width} × {box.Length} ×{" "}
+                        {box.Depth} mm
+                      </p>
+
+                      {box.MaxWeight != null && (
+                        <p className="mt-1 text-xs text-[#71849a]">
+                          Max weight: {box.MaxWeight} kg
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <p className="text-xs text-[#71849a]">
+                  Carton sizes are configured centrally.
+                  No manual box dimensions are required.
+                </p>
+              </div>
             )}
-          </div>
+          </Card>
         </section>
 
         <button
           type="button"
-          onClick={submit}
-          className="mt-7 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#2686d5] px-5 py-4 text-sm font-bold text-white"
+          onClick={() => void submit()}
+          disabled={
+            submitting ||
+            loadingBoxes ||
+            boxes.length === 0 ||
+            Boolean(boxError)
+          }
+          className="mt-7 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#2686d5] px-5 py-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <Send className="h-4 w-4" />
+          {submitting ? (
+            <RefreshCw className="h-4 w-4 animate-spin" />
+          ) : (
+            <Send className="h-4 w-4" />
+          )}
 
-          Submit Order
+          {submitting ? "Submitting..." : "Submit Order"}
         </button>
       </main>
     </AppShell>
   );
 }
+
 export default NewOrderPage;

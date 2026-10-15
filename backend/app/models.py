@@ -31,6 +31,9 @@ class OrderItem(Base):
     Weight = Column(Float, nullable=False)
     Quantity = Column(Integer, nullable=True)
     KeepUpright = Column(Boolean, nullable=True)
+    
+    Fragile = Column(Boolean, nullable=False, default=False)
+
 
     __table_args__ = (CheckConstraint("\"Weight\" >= 0", name="order_items_weight_non_negative"),)
 

@@ -1,3 +1,4 @@
+
 export type OrderStatus =
   | "processing"
   | "completed"
@@ -13,6 +14,7 @@ export interface PackerItem {
   Weight: number;
   Quantity: number;
   BoxGroup?: string;
+  Fragile?: boolean;
 }
 
 export interface BoxType {
@@ -69,6 +71,7 @@ export interface StoredOrder {
 }
 
 export type UserRole = "user" | "supervisor" | "admin";
+
 export interface UserProfile {
   id: string;
   email: string;
