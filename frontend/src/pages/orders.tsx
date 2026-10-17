@@ -26,58 +26,64 @@ export function OrdersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("All");
   const [orders, setOrders] = useState<OrderSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     const loadOrders = async () => {
       try {
-        const basicOrders = await apiFetch<
+        setLoading(true);
+        setError("");
+
+        const orderSummaries = await apiFetch<
           {
             order_id: number;
             status: string;
             created_at: string;
+            items_count: number;
+            boxes_count: number;
           }[]
         >("/orders/");
 
-        const detailedOrders = await Promise.all(
-          basicOrders.map(async (order) => {
-            const details = await apiFetch<{
-              order_id: number;
-              status: string;
-              created_at: string;
-              items: unknown[];
-              box_types: string[];
-            }>(`/orders/${order.order_id}`);
+        const mappedOrders = orderSummaries.map((order) => {
+          const createdAt = new Date(order.created_at);
 
-            const createdAt = new Date(order.created_at);
+          return {
+            id: String(order.order_id),
+            reference: `ORD-${order.order_id}`,
+            status:
+              order.status.charAt(0).toUpperCase() +
+              order.status.slice(1),
+            itemsCount: order.items_count,
+            boxesCount: order.boxes_count,
+            time: createdAt.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            date: createdAt.toLocaleDateString([], {
+              month: "short",
+              day: "numeric",
+            }),
+          };
+        });
 
-            return {
-              id: String(order.order_id),
-              reference: `ORD-${order.order_id}`,
-              status:
-                order.status.charAt(0).toUpperCase() +
-                order.status.slice(1),
-              itemsCount: details.items.length,
-              boxesCount: details.box_types.length,
-              time: createdAt.toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              }),
-              date: createdAt.toLocaleDateString([], {
-                month: "short",
-                day: "numeric",
-              }),
-            };
-          }),
-        );
-
-        setOrders(detailedOrders);
+        setOrders(mappedOrders);
       } catch (error) {
         console.error("Failed to load orders:", error);
+
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Failed to load orders.",
+        );
+      } finally {
+        setLoading(false);
       }
     };
 
     loadOrders();
-  }, []);
+  }, [reloadKey]);
 
   const filteredOrders = orders.filter((order) => {
     const matchesSearch = order.reference
@@ -95,7 +101,7 @@ export function OrdersPage() {
         right={
           <span className="bg-white border border-[#dce5ee] text-[#49637e] text-xs px-3 py-1 rounded-full flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-[#2686d5]"></span>
-            {orders.length} Total
+            {loading ? "..." : orders.length} Total
           </span>
         }
       />
@@ -136,7 +142,31 @@ export function OrdersPage() {
 
         {/* Orders Queue List */}
         <section className="mt-6 space-y-3">
-          {filteredOrders.length === 0 ? (
+          {loading ? (
+            <Card className="p-8 text-center">
+              <Package className="h-8 w-8 text-[#6a7f99] mx-auto mb-2" />
+              <p className="text-sm font-semibold text-[#172f50]">
+                Loading orders...
+              </p>
+            </Card>
+          ) : error ? (
+            <Card className="p-8 text-center">
+              <Package className="h-8 w-8 text-[#b64641] mx-auto mb-2" />
+              <p className="text-sm font-semibold text-[#b64641]">
+                Unable to load orders
+              </p>
+              <p className="mt-1 text-xs text-[#6a7f99]">
+                {error}
+              </p>
+              <button
+                type="button"
+                onClick={() => setReloadKey((value) => value + 1)}
+                className="mt-4 rounded-lg bg-[#2686d5] px-4 py-2 text-xs font-semibold text-white hover:bg-[#1f77be]"
+              >
+                Try again
+              </button>
+            </Card>
+          ) : filteredOrders.length === 0 ? (
             <Card className="p-8 text-center">
               <Package className="h-8 w-8 text-[#6a7f99] mx-auto mb-2" />
               <p className="text-sm font-semibold text-[#172f50]">No orders found</p>

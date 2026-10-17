@@ -37,6 +37,10 @@ class OrderOut(BaseModel):
     status: str
     created_at: datetime
 
+class OrderSummaryOut(OrderOut):
+    items_count: int
+    boxes_count: int
+
 class OrderWithItemsOut(OrderOut):
     items: list[ItemOut] = []
     box_types: list[str] = []

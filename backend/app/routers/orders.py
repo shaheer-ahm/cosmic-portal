@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Response
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from uuid import uuid4
 
@@ -10,9 +11,53 @@ from app.solver_client import call_solver, SolverError
 router = APIRouter(prefix="/api/v1/orders", tags=["orders"])
 
 
-@router.get("/", response_model=list[schemas.OrderOut])
+@router.get("/", response_model=list[schemas.OrderSummaryOut])
 def list_orders(db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
-    return db.query(models.Order).order_by(models.Order.created_at.desc()).all()
+    item_counts = (
+        db.query(
+            models.OrderItem.order_id.label("order_id"),
+            func.count(models.OrderItem.ItemCode).label("items_count"),
+        )
+        .group_by(models.OrderItem.order_id)
+        .subquery()
+    )
+
+    box_counts = (
+        db.query(
+            models.OrderBoxType.order_id.label("order_id"),
+            func.count(models.OrderBoxType.Reference).label("boxes_count"),
+        )
+        .group_by(models.OrderBoxType.order_id)
+        .subquery()
+    )
+
+    rows = (
+        db.query(
+            models.Order,
+            func.coalesce(item_counts.c.items_count, 0).label("items_count"),
+            func.coalesce(box_counts.c.boxes_count, 0).label("boxes_count"),
+        )
+        .outerjoin(
+            item_counts,
+            item_counts.c.order_id == models.Order.order_id,
+        )
+        .outerjoin(
+            box_counts,
+            box_counts.c.order_id == models.Order.order_id,
+        )
+        .order_by(models.Order.created_at.desc())
+        .all()
+    )
+    return [
+        schemas.OrderSummaryOut(
+            order_id=order.order_id,
+            status=order.status,
+            created_at=order.created_at,
+            items_count=items_count,
+            boxes_count=boxes_count,
+        )
+        for order, items_count, boxes_count in rows
+    ]
 
 
 @router.get("/{order_id}", response_model=schemas.OrderWithItemsOut)
