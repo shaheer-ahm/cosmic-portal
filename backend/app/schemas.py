@@ -158,12 +158,20 @@ class SolverPlacedItem(BaseModel):
     Dimensions: SolverDimensions
     Orientation: SolverOrientation
     Weight: Optional[float] = None
+    Fragile: bool = False
+
+class SolverCenterOfGravity(BaseModel):
+    X: float
+    Y: float
+    Z: float
 
 class SolverBox(BaseModel):
     BoxIndex: int
     Reference: str
     BoxGroup: Optional[str] = None
     Dimensions: SolverDimensions
+    CentreOfGravity: Optional[SolverCenterOfGravity] = None
+    Balanced: Optional[bool] = None
     ItemCount: int
     ItemsWeight: float
     BoxWeight: float

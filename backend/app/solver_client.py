@@ -42,19 +42,24 @@ def _item_payload(item: "models.OrderItem") -> dict[str, Any]:
 
 
 def _box_type_payload(box: "models.BoxType") -> dict[str, Any]:
-    payload: dict[str, Any] = {
+    payload = {
         "Reference": box.Reference,
         "Width": box.Width,
         "Length": box.Length,
         "Depth": box.Depth,
         "Active": box.Active,
     }
-    if box.MaxWeight is not None:
-        payload["MaxWeight"] = box.MaxWeight
-    if box.BoxWeight is not None:
-        payload["BoxWeight"] = box.BoxWeight
-    if box.MaximumBoxes is not None:
-        payload["MaximumBoxes"] = box.MaximumBoxes
+
+    optional_fields = {
+        "MaxWeight": box.MaxWeight,
+        "BoxWeight": box.BoxWeight,
+        "MaximumBoxes": box.MaximumBoxes,
+    }
+
+    for field, value in optional_fields.items():
+        if value is not None:
+            payload[field] = value
+
     return payload
 
 
