@@ -22,9 +22,12 @@ CREATE TABLE IF NOT EXISTS order_items (
     "BoxGroup"      VARCHAR(50) NULL,
     "Quantity"      INT NULL,
     "KeepUpright"   BOOLEAN NULL,
+    "Fragile"       BOOLEAN NOT NULL DEFAULT FALSE,
     PRIMARY KEY (order_id, "ItemCode"),
     FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE
 );
+ALTER TABLE order_items
+ADD COLUMN IF NOT EXISTS "Fragile" BOOLEAN NOT NULL DEFAULT FALSE;
 
 -- Box types
 -- Global reference data

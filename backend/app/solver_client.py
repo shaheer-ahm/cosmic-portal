@@ -30,6 +30,7 @@ def _item_payload(item: "models.OrderItem") -> dict[str, Any]:
         "Length": item.Length,
         "Depth": item.Depth,
         "Weight": item.Weight,
+        "Fragile": item.Fragile,
     }
     if item.BoxGroup is not None:
         payload["BoxGroup"] = item.BoxGroup
