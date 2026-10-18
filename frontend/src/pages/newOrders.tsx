@@ -4,15 +4,23 @@ import {
   Plus,
   Send,
   Sparkles,
+  Trash2,
   RefreshCw,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 import { AppShell } from "../components/layout/AppShell";
 import { PageHeader } from "../components/layout/PageHeader";
 import { ItemEditor } from "../components/orders/ItemEditor";
+import { CustomBoxForm } from "../components/orders/CustomBoxForm";
 import { Card } from "../components/ui/Card";
 import { apiFetch } from "../lib/api";
+import { useAuth } from "../lib/useAuth";
 
 import type { BoxType, PackerItem } from "../types/domain";
 
@@ -64,23 +72,43 @@ const sampleItems: PackerItem[] = [
 ];
 
 export function NewOrderPage() {
+  const { role } = useAuth();
+
+  // Backend RBAC roles are uppercase:
+  // USER and SUPERVISOR.
+  const isSupervisor =
+    role?.toUpperCase() === "SUPERVISOR";
+
   const [orderRef, setOrderRef] = useState("");
+
   const [items, setItems] = useState<PackerItem[]>([
     blankItem(),
   ]);
 
   const [boxes, setBoxes] = useState<BoxType[]>([]);
+  const [selectedBoxRefs, setSelectedBoxRefs] = useState<
+    string[]
+  >([]);
+
   const [loadingBoxes, setLoadingBoxes] = useState(true);
   const [boxError, setBoxError] = useState<string | null>(
     null
   );
 
+  const [showCustomBoxForm, setShowCustomBoxForm] =
+    useState(false);
+
   const [issues, setIssues] = useState<string[]>([]);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Get the current carton catalogue from FitPortal.
-  // No carton dimensions are hardcoded in the frontend.
+  // Tracks whether initial carton selection has been set.
+  const boxSelectionInitialized = useRef(false);
+
+  // --------------------------------------------------
+  // Load active carton catalogue from backend
+  // --------------------------------------------------
+
   const loadBoxes = useCallback(async () => {
     setLoadingBoxes(true);
     setBoxError(null);
@@ -96,6 +124,26 @@ export function NewOrderPage() {
 
       setBoxes(active);
 
+      if (!boxSelectionInitialized.current) {
+        boxSelectionInitialized.current = true;
+
+        // Preserve previous behaviour:
+        // all active cartons selected initially.
+        setSelectedBoxRefs(
+          active.map((box) => box.Reference)
+        );
+      } else {
+        // On refresh, preserve user selections.
+        // Remove references that became inactive.
+        setSelectedBoxRefs((current) =>
+          current.filter((reference) =>
+            active.some(
+              (box) => box.Reference === reference
+            )
+          )
+        );
+      }
+
       if (active.length === 0) {
         setBoxError(
           "No active carton types are configured. " +
@@ -103,7 +151,6 @@ export function NewOrderPage() {
         );
       }
     } catch (error) {
-      setBoxes([]);
       setBoxError(
         error instanceof Error
           ? error.message
@@ -118,16 +165,146 @@ export function NewOrderPage() {
     void loadBoxes();
   }, [loadBoxes]);
 
+  // --------------------------------------------------
+  // Carton selection
+  // --------------------------------------------------
+
+  const toggleBox = (reference: string) => {
+    if (submitting) return;
+
+    setSelectedBoxRefs((current) =>
+      current.includes(reference)
+        ? current.filter((ref) => ref !== reference)
+        : [...current, reference]
+    );
+
+    setSubmitted(false);
+    setOrderRef("");
+  };
+
+  // Newly created carton is added to the local
+  // catalogue and selected for this order.
+  const handleCustomBoxCreated = (box: BoxType) => {
+    setBoxes((current) => {
+      const exists = current.some(
+        (existing) =>
+          existing.Reference === box.Reference
+      );
+
+      if (exists) return current;
+
+      return [...current, box].sort((a, b) =>
+        a.Reference.localeCompare(b.Reference)
+      );
+    });
+
+    setSelectedBoxRefs((current) =>
+      current.includes(box.Reference)
+        ? current
+        : [...current, box.Reference]
+    );
+
+    setShowCustomBoxForm(false);
+    setBoxError(null);
+    setSubmitted(false);
+    setOrderRef("");
+  };
+
+  
+  const [deletingBox, setDeletingBox] = useState<
+    string | null
+  >(null);
+
+  const [deleteError, setDeleteError] = useState<
+    string | null
+  >(null);
+
+  
+  const deleteCustomBox = async (reference: string) => {
+    if (
+      !isSupervisor ||
+      submitting ||
+      deletingBox !== null ||
+      loadingBoxes
+    ) {
+      return;
+    }
+
+    
+    const systemCartons = ["SML", "MED", "LRG"];
+
+    if (systemCartons.includes(reference.toUpperCase())) {
+      return;
+    }
+
+
+    const confirmed = window.confirm(
+      `Remove ${reference} from the shared carton catalogue?\n\n` +
+      "This will make it unavailable for new orders. " +
+      "Historical completed orders will be preserved."
+    );
+
+    if (!confirmed) return;
+
+    setDeletingBox(reference);
+    setDeleteError(null);
+
+    try {
+      await apiFetch<void>(
+        `/box-types/${encodeURIComponent(reference)}`,
+        { method: "DELETE" }
+      );
+
+      setBoxes((current) =>
+        current.filter(
+          (box) => box.Reference !== reference
+        )
+      );
+
+      setSelectedBoxRefs((current) =>
+        current.filter(
+          (ref) => ref !== reference
+        )
+      );
+
+      setSubmitted(false);
+      setOrderRef("");
+      setIssues([]);
+    } catch (error) {
+      setDeleteError(
+        error instanceof Error
+          ? error.message
+          : "Unable to delete custom carton."
+      );
+    } finally {
+      setDeletingBox(null);
+    }
+  };
+
+
+
+  // --------------------------------------------------
+  // Item management
+  // --------------------------------------------------
+
   const loadSamples = () => {
-    setItems(sampleItems.map((item) => ({ ...item })));
+    setItems(
+      sampleItems.map((item) => ({ ...item }))
+    );
+
     setOrderRef("");
     setIssues([]);
     setSubmitted(false);
   };
 
   const addItem = () => {
-    setItems((current) => [...current, blankItem()]);
+    setItems((current) => [
+      ...current,
+      blankItem(),
+    ]);
+
     setSubmitted(false);
+    setOrderRef("");
   };
 
   const updateItem = (
@@ -141,21 +318,31 @@ export function NewOrderPage() {
     );
 
     setSubmitted(false);
+    setOrderRef("");
   };
 
   const removeItem = (index: number) => {
     setItems((current) =>
-      current.filter((_, itemIndex) => itemIndex !== index)
+      current.filter(
+        (_, itemIndex) => itemIndex !== index
+      )
     );
 
     setSubmitted(false);
+    setOrderRef("");
   };
+
+  // --------------------------------------------------
+  // Validation
+  // --------------------------------------------------
 
   const validateForm = (): string[] => {
     const errors: string[] = [];
 
     if (items.length === 0) {
-      errors.push("At least one item is required.");
+      errors.push(
+        "At least one item is required."
+      );
     }
 
     items.forEach((item, index) => {
@@ -220,11 +407,17 @@ export function NewOrderPage() {
     });
 
     const itemCodes = items
-      .map((item) => item.ItemCode.trim().toUpperCase())
+      .map((item) =>
+        item.ItemCode.trim().toUpperCase()
+      )
       .filter(Boolean);
 
-    if (new Set(itemCodes).size !== itemCodes.length) {
-      errors.push("Item codes must be unique.");
+    if (
+      new Set(itemCodes).size !== itemCodes.length
+    ) {
+      errors.push(
+        "Item codes must be unique."
+      );
     }
 
     if (loadingBoxes) {
@@ -241,8 +434,18 @@ export function NewOrderPage() {
       );
     }
 
+    if (selectedBoxRefs.length === 0) {
+      errors.push(
+        "Select at least one carton type for this order."
+      );
+    }
+
     return errors;
   };
+
+  // --------------------------------------------------
+  // Submit order to FitPortal backend
+  // --------------------------------------------------
 
   const submit = async () => {
     if (submitting) return;
@@ -252,10 +455,12 @@ export function NewOrderPage() {
     if (validationErrors.length > 0) {
       setIssues(validationErrors);
       setSubmitted(false);
+
       window.scrollTo({
         top: 0,
         behavior: "smooth",
       });
+
       return;
     }
 
@@ -266,7 +471,7 @@ export function NewOrderPage() {
     let createdOrderId: number | null = null;
 
     try {
-      // 1. Create an empty order.
+      // 1. Create the order.
       const createdOrder = await apiFetch<{
         order_id: number;
         status: string;
@@ -278,7 +483,8 @@ export function NewOrderPage() {
 
       createdOrderId = createdOrder.order_id;
 
-      // 2. Add every item, including Fragile metadata.
+      // 2. Save all items.
+      // Fragile and BoxGroup are preserved.
       await Promise.all(
         items.map((item) =>
           apiFetch(
@@ -286,8 +492,10 @@ export function NewOrderPage() {
             {
               method: "POST",
               body: JSON.stringify({
-                ItemCode: item.ItemCode.trim(),
-                ItemReference: item.ItemReference.trim(),
+                ItemCode:
+                  item.ItemCode.trim(),
+                ItemReference:
+                  item.ItemReference.trim(),
                 Width: item.Width,
                 Length: item.Length,
                 Depth: item.Depth,
@@ -295,36 +503,42 @@ export function NewOrderPage() {
                 Quantity: item.Quantity,
                 BoxGroup:
                   item.BoxGroup?.trim() || null,
-                Fragile: item.Fragile ?? false,
+                Fragile:
+                  item.Fragile ?? false,
               }),
             }
           )
         )
       );
 
-      // 3. Automatically assign all active carton
-      // types using references from the database.
+      // 3. Attach ONLY the selected cartons.
+      // These can include newly created
+      // custom catalogue cartons.
       await apiFetch(
         `/orders/${createdOrder.order_id}/box-types`,
         {
           method: "POST",
           body: JSON.stringify({
-            references: boxes.map(
-              (box) => box.Reference
-            ),
+            references: selectedBoxRefs,
           }),
         }
       );
 
-      setOrderRef(`ORD-${createdOrder.order_id}`);
+      setOrderRef(
+        `ORD-${createdOrder.order_id}`
+      );
+
       setSubmitted(true);
 
       console.log(
-        "ORDER + ITEMS + BOX TYPES SAVED:",
+        "Order saved:",
         createdOrder.order_id
       );
     } catch (error) {
-      console.error("Failed to submit order:", error);
+      console.error(
+        "Failed to submit order:",
+        error
+      );
 
       const message =
         error instanceof Error
@@ -348,11 +562,17 @@ export function NewOrderPage() {
     });
   };
 
+  // --------------------------------------------------
+  // UI
+  // --------------------------------------------------
+
   return (
     <AppShell>
       <PageHeader title="New Order" />
 
       <main className="cf-page">
+        {/* Order reference */}
+
         <Card className="p-5">
           <div className="flex items-center gap-3">
             <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#e7f3ff] text-[#2582ce]">
@@ -382,6 +602,8 @@ export function NewOrderPage() {
           </div>
         </Card>
 
+        {/* Validation errors */}
+
         {issues.length > 0 && (
           <div
             role="alert"
@@ -401,14 +623,19 @@ export function NewOrderPage() {
           </div>
         )}
 
+        {/* Success message */}
+
         {submitted && (
           <div
             role="status"
             className="mt-4 rounded-2xl border border-[#bfe9d2] bg-[#eaf9f0] p-4 text-sm text-[#137452]"
           >
-            Order saved successfully as {orderRef}.
+            Order saved successfully as{" "}
+            <strong>{orderRef}</strong>.
           </div>
         )}
+
+        {/* Sample data */}
 
         <button
           type="button"
@@ -419,6 +646,8 @@ export function NewOrderPage() {
           <Sparkles className="h-4 w-4" />
           Load sample data
         </button>
+
+        {/* Items section */}
 
         <section className="mt-7">
           <div className="mb-3 flex items-center justify-between gap-4">
@@ -452,7 +681,9 @@ export function NewOrderPage() {
                 onChange={(updatedItem) =>
                   updateItem(index, updatedItem)
                 }
-                onRemove={() => removeItem(index)}
+                onRemove={() =>
+                  removeItem(index)
+                }
               />
             ))}
 
@@ -464,28 +695,32 @@ export function NewOrderPage() {
           </div>
         </section>
 
+        {/* Carton catalogue */}
+
         <section className="mt-8">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="font-mono text-xs uppercase tracking-[0.2em] text-[#7187a0]">
                 Available carton types
               </p>
 
               <p className="mt-1 text-xs text-[#70839c]">
-                Managed by FitPortal and automatically
-                assigned to new orders.
+                Select cartons for this order or
+                create a reusable custom carton.
               </p>
             </div>
 
             <button
               type="button"
               onClick={() => void loadBoxes()}
-              disabled={loadingBoxes || submitting}
-              className="flex items-center gap-2 rounded-xl border border-[#d8e5f1] bg-white px-3 py-2 text-xs font-semibold text-[#217fc7] disabled:opacity-50"
+              disabled={loadingBoxes || submitting || deletingBox !== null}
+              className="flex items-center gap-2 rounded-xl border border-[#d8e5f1] bg-white px-4 py-2 text-xs font-semibold text-[#217fc7] disabled:opacity-50"
             >
               <RefreshCw
                 className={`h-4 w-4 ${
-                  loadingBoxes ? "animate-spin" : ""
+                  loadingBoxes
+                    ? "animate-spin"
+                    : ""
                 }`}
               />
               Refresh
@@ -493,6 +728,19 @@ export function NewOrderPage() {
           </div>
 
           <Card className="p-5">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-bold text-[#172f50]">
+                {boxes.length} active carton{" "}
+                {boxes.length === 1
+                  ? "type"
+                  : "types"}
+              </p>
+
+              <p className="text-xs text-[#71849a]">
+                {selectedBoxRefs.length} selected
+              </p>
+            </div>
+
             {loadingBoxes ? (
               <p
                 role="status"
@@ -508,58 +756,155 @@ export function NewOrderPage() {
                 {boxError}
               </p>
             ) : (
-              <div className="space-y-3">
-                <p className="text-sm font-semibold text-[#172f50]">
-                  {boxes.length} active carton
-                  {boxes.length === 1 ? "" : " types"}
-                </p>
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                
+                {boxes.map((box) => {
+                  const selected = selectedBoxRefs.includes(
+                    box.Reference
+                  );
 
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  {boxes.map((box) => (
+                  
+                  const systemCartons = ["SML", "MED", "LRG"];
+
+                  const isCustom = !systemCartons.includes(
+                    box.Reference.toUpperCase()
+                  );
+
+
+                  return (
                     <div
                       key={box.Reference}
-                      className="rounded-xl border border-[#dce6ef] bg-[#f8fbff] p-4"
+                      className={`rounded-xl border p-4 transition-colors ${
+                        selected
+                          ? "border-[#8cb8ed] bg-[#eff7ff]"
+                          : "border-[#dce6ef] bg-[#f8fbff]"
+                      }`}
                     >
-                      <div className="flex items-center gap-2">
-                        <BoxIcon className="h-4 w-4 text-[#2686d5]" />
+                      <label className="flex cursor-pointer flex-col gap-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <BoxIcon className="h-4 w-4 shrink-0 text-[#2686d5]" />
 
-                        <p className="text-sm font-bold text-[#172f50]">
-                          {box.Reference}
+                            <span className="truncate text-sm font-bold text-[#172f50]">
+                              {box.Reference}
+                            </span>
+                          </div>
+
+                          <input
+                            type="checkbox"
+                            checked={selected}
+                            onChange={() =>
+                              toggleBox(box.Reference)
+                            }
+                            disabled={submitting || deletingBox !== null}
+                            aria-label={`Select ${box.Reference}`}
+                            className="h-5 w-5 shrink-0 accent-[#2686d5]"
+                          />
+                        </div>
+
+                        <p className="text-xs text-[#71849a]">
+                          {box.Width} × {box.Length} ×{" "}
+                          {box.Depth} mm
                         </p>
-                      </div>
 
-                      <p className="mt-2 text-xs text-[#71849a]">
-                        {box.Width} × {box.Length} ×{" "}
-                        {box.Depth} mm
-                      </p>
-
-                      {box.MaxWeight != null && (
-                        <p className="mt-1 text-xs text-[#71849a]">
-                          Max weight: {box.MaxWeight} kg
+                        <p className="text-xs text-[#71849a]">
+                          Max weight:{" "}
+                          {box.MaxWeight != null
+                            ? `${box.MaxWeight} kg`
+                            : "Unspecified"}
                         </p>
+                      </label>
+
+                      {isSupervisor && isCustom && (
+                        <div className="mt-4 border-t border-[#dce6ef] pt-3">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              void deleteCustomBox(box.Reference)
+                            }
+                            disabled={deletingBox !== null || submitting}
+                            className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#f0c8c4] bg-white px-3 py-2 text-xs font-semibold text-[#b64641] transition-colors hover:bg-[#fff1ef] disabled:opacity-50"
+                            aria-label={`Delete ${box.Reference}`}
+                          >
+                            {deletingBox === box.Reference ? (
+                              <RefreshCw className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+
+                            {deletingBox === box.Reference
+                              ? "Deleting..."
+                              : "Delete custom box"}
+                          </button>
+                        </div>
                       )}
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
 
-                <p className="text-xs text-[#71849a]">
-                  Carton sizes are configured centrally.
-                  No manual box dimensions are required.
-                </p>
               </div>
             )}
+
+            <p className="mt-4 text-xs text-[#71849a]">
+              Only selected cartons will be
+              available to FitSolver for
+              this order.
+            </p>
+
+            {/* Supervisor-only catalogue management */}
+
+            {isSupervisor && (
+              <button
+                type="button"
+                onClick={() =>
+                  setShowCustomBoxForm(
+                    (current) => !current
+                  )
+                }
+                disabled={submitting || deletingBox !== null}
+                className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl border border-[#9ec8ec] bg-[#eff7ff] px-4 py-3 text-sm font-semibold text-[#217fc7] disabled:opacity-50"
+              >
+                <Plus className="h-4 w-4" />
+                Create custom box
+              </button>
+            )}
           </Card>
+          
+          {deleteError && (
+            <div
+              role="alert"
+              className="mt-3 rounded-xl border border-[#f0c8c4] bg-[#fff1ef] p-4 text-sm text-[#b64641]"
+            >
+              {deleteError}
+            </div>
+          )}
+
+
+          {isSupervisor && showCustomBoxForm && (
+            <CustomBoxForm
+              onCreated={handleCustomBoxCreated}
+              onCancel={() =>
+                setShowCustomBoxForm(false)
+              }
+            />
+          )}
         </section>
+
+        {/* Submit order */}
 
         <button
           type="button"
           onClick={() => void submit()}
+          
           disabled={
             submitting ||
+            deletingBox !== null ||
             loadingBoxes ||
             boxes.length === 0 ||
+            selectedBoxRefs.length === 0 ||
             Boolean(boxError)
           }
+
           className="mt-7 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#2686d5] px-5 py-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
         >
           {submitting ? (
@@ -568,7 +913,9 @@ export function NewOrderPage() {
             <Send className="h-4 w-4" />
           )}
 
-          {submitting ? "Submitting..." : "Submit Order"}
+          {submitting
+            ? "Submitting..."
+            : "Submit Order"}
         </button>
       </main>
     </AppShell>
