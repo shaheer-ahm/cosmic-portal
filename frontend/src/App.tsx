@@ -7,6 +7,7 @@ import { useAuth } from "./lib/useAuth";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
 import AuthPage from "./pages/auth";
+import ResetPasswordPage from "./pages/resetPassword";
 import DashboardPage from "./pages/dashboard";
 import { OrdersPage } from "./pages/orders";
 import NewOrderPage from "./pages/newOrders";
@@ -72,6 +73,9 @@ export default function App() {
                     )
                 }
             />
+
+            {/* Password reset */}
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
 
             {/* Protected portal pages */}
             <Route

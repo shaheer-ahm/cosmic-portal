@@ -47,19 +47,27 @@ Authentication is handled by Supabase.
    | `SUPABASE_URL` | `app/auth.py`, `app/routers/auth.py` | Supabase → Project Settings → API. Used for authentication requests and ES256 public-key discovery. **No trailing slash** |
    | `SUPABASE_ANON_KEY` | `app/routers/auth.py` | Supabase → Project Settings → API (publishable/anon key) |
    | `SOLVER_URL` | `app/solver_client.py` | The FitSolver service base URL |
-   | `ALLOWED_ORIGINS` | `app/main.py` | Comma-separated CORS origins. Must match the frontend origin **exactly** — `http://localhost:5173`, no trailing slash, or the browser blocks every request |
+   | `PASSWORD_RESET_REDIRECT_URL` | `app/routers/auth.py` | Where reset links send users if the frontend doesn't supply a trusted `redirect_to`|
+   | `ALLOWED_ORIGINS` | `app/main.py`, `app/routers/auth.py` | Comma-separated CORS origins. Must match the frontend origin **exactly** — `http://localhost:5173`, no trailing slash, or the browser blocks every request |
+   | `ALLOWED_ORIGINS` | `app/main.py`, `app/routers/auth.py` | Comma-separated CORS origins. Must match the frontend origin **exactly** — `http://localhost:5173`, no trailing slash, or the browser blocks every request |
 
    Authentication tokens are verified using Supabase's public JWKS endpoint and the ES256 signing algorithm. The Supabase JWT secret is not required.
 
    `.env` is gitignored and must never be committed. Share values through a
    password manager, not the repository.
 
-6. **Run the API**
+6. **Allow the password-reset page in Supabase**
+
+   Supabase → Authentication → URL Configuration → **Redirect URLs**, add every
+   frontend origin's reset page, e.g. `http://localhost:5173/reset-password`
+   and the deployed `https://<portal-host>/reset-password`. 
+   
+7. **Run the API**
    ```bash
    uvicorn app.main:app --reload
    ```
 
-7. **Open the docs**
+8. **Open the docs**
    http://localhost:8000/docs
 
 

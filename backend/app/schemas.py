@@ -58,6 +58,16 @@ class BoxTypeBase(BaseModel):
 class BoxTypeOut(BoxTypeBase):
     model_config = ConfigDict(from_attributes=True)
 
+class BoxTypeCreate(BaseModel):
+    """Body for POST /box-types."""
+    Reference: str = Field(min_length=1, max_length=50)
+    Width: float = Field(gt=0)
+    Length: float = Field(gt=0)
+    Depth: float = Field(gt=0)
+    MaxWeight: Optional[float] = Field(default=None, gt=0)
+    BoxWeight: Optional[float] = Field(default=None, ge=0)
+    MaximumBoxes: Optional[int] = Field(default=None, ge=1)
+
 # Order box-type selection
 
 class BoxTypeSelectionIn(BaseModel):
@@ -238,6 +248,16 @@ class LoginResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     expires_in: Optional[int] = None
+
+class ForgotPasswordRequest(BaseModel):
+    email: str = Field(min_length=3, max_length=255, pattern=r"^[^@\s]+@[^@\s]+$")
+    redirect_to: Optional[str] = Field(default=None, max_length=2048)
+
+class ResetPasswordRequest(BaseModel):
+    new_password: str = Field(min_length=1, max_length=72)
+
+class MessageResponse(BaseModel):
+    message: str
 
 class CurrentUserOut(BaseModel):
     user_id: str
