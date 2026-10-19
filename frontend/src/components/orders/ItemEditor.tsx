@@ -74,7 +74,8 @@ export function ItemEditor({
           <Field
             label="Width"
             type="number"
-            min="0"
+            min="1"
+            step="1"
             value={item.Width || ""}
             onChange={(event) =>
               onChange({
@@ -88,7 +89,8 @@ export function ItemEditor({
           <Field
             label="Length"
             type="number"
-            min="0"
+            min="1"
+            step="1"
             value={item.Length || ""}
             onChange={(event) =>
               onChange({
@@ -102,7 +104,8 @@ export function ItemEditor({
           <Field
             label="Depth"
             type="number"
-            min="0"
+            min="1"
+            step="1"
             value={item.Depth || ""}
             onChange={(event) =>
               onChange({

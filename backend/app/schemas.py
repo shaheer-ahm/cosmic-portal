@@ -1,22 +1,37 @@
 from typing import Optional, Literal
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 
 
 class ItemBase(BaseModel):
-    ItemCode: str
-    ItemReference: str
-    Width: int
-    Length: int
-    Depth: int
-    BoxGroup: Optional[str] = None
-    Weight: float = Field(ge=0)
-    Quantity: Optional[int] = None
+    ItemCode: str = Field(min_length = 1, max_length = 50)
+    ItemReference: str = Field(min_length = 1, max_length = 255)
+    Width: int = Field(gt = 0)
+    Length: int = Field(gt = 0)
+    Depth: int = Field(gt = 0)
+    BoxGroup: Optional[str] = Field(default = None, max_length = 50)
+    Weight: float = Field(ge = 0)
+    Quantity: Optional[int] = Field(default = None, ge = 1)
     KeepUpright: Optional[bool] = None
     Fragile: bool = False
 
+    @field_validator("ItemCode", "ItemReference")
+    @classmethod
+    def required_text_not_blank(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("must not be blank")
+        return value
+
+    @field_validator("BoxGroup")
+    @classmethod
+    def normalise_optional_box_group(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        value = value.strip()
+        return value or None
 
 
 class ItemCreate(ItemBase):
