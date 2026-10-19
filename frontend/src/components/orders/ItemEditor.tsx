@@ -5,7 +5,7 @@ import { Card } from "../ui/Card";
 import { Field } from "./Field";
 
 const toNumber = (value: string) =>
-  value === "" ? 0 : Number(value);
+  value === "" ? Number.NaN : Number(value);
 
 type ItemEditorProps = {
   item: PackerItem;
@@ -122,8 +122,8 @@ export function ItemEditor({
             label="Weight"
             type="number"
             step="0.01"
-            min="0"
-            value={item.Weight || ""}
+            min="0.01"
+            value={Number.isFinite(item.Weight) ? item.Weight : ""}
             onChange={(event) =>
               onChange({
                 ...item,
@@ -138,7 +138,7 @@ export function ItemEditor({
             type="number"
             step="1"
             min="1"
-            value={item.Quantity}
+            value={Number.isFinite(item.Quantity) ? item.Quantity : ""}
             onChange={(event) =>
               onChange({
                 ...item,

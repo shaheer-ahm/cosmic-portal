@@ -12,7 +12,7 @@ class ItemBase(BaseModel):
     Length: int = Field(gt = 0)
     Depth: int = Field(gt = 0)
     BoxGroup: Optional[str] = Field(default = None, max_length = 50)
-    Weight: float = Field(ge = 0)
+    Weight: float = Field(gt = 0)
     Quantity: Optional[int] = Field(default = None, ge = 1)
     KeepUpright: Optional[bool] = None
     Fragile: bool = False

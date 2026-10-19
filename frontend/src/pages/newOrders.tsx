@@ -389,10 +389,10 @@ export function NewOrderPage() {
 
       if (
         !Number.isFinite(item.Weight) ||
-        item.Weight < 0
+        item.Weight <= 0
       ) {
         errors.push(
-          `Item ${number}: Weight cannot be negative.`
+          `Item ${number}: Weight cannot be zero or negative.`
         );
       }
 

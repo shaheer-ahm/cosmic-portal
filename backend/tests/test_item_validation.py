@@ -23,6 +23,7 @@ def valid_item_data():
         ("Width", 0),
         ("Length", -1),
         ("Depth", 0),
+        ("Weight", 0),
         ("Weight", -0.01),
         ("Quantity", 0),
         ("ItemCode", "   "),
