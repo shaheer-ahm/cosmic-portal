@@ -1,6 +1,7 @@
 import os
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import Mock, call
+from pydantic import ValidationError
 
 import pytest
 from fastapi import HTTPException
@@ -98,5 +99,155 @@ def test_processing_order_cannot_be_deleted(monkeypatch, role):
     with pytest.raises(HTTPException) as error:
         orders.delete_order(order_id = 42, db = db, user = make_user(role = role))
     assert error.value.status_code == 409
+    db.delete.assert_not_called()
+    db.commit.assert_not_called()
+
+
+def setup_bulk_db(order_list):
+    db = Mock()
+    db.query.return_value.filter.return_value.all.return_value = order_list
+
+    return db
+
+
+def test_bulk_request_removes_duplicate_ids():
+    request = orders.schemas.BulkOrderDeleteRequest(
+        order_ids = [3, 1, 3, 2, 1],
+    )
+
+    assert request.order_ids == [3, 1, 2]
+
+
+@pytest.mark.parametrize(
+    "order_ids",
+    [
+        [],
+        [0],
+        list(range(1, 202)),
+    ],
+)
+def test_bulk_request_rejects_invalid_selections(order_ids):
+    with pytest.raises(ValidationError):
+        orders.schemas.BulkOrderDeleteRequest(order_ids = order_ids)
+
+
+def test_supervisor_can_bulk_delete_allowed_orders():
+    first = SimpleNamespace(
+        order_id = 1,
+        status = "completed",
+        created_by = None,
+    )
+    second = SimpleNamespace(
+        order_id = 2,
+        status = "validated",
+        created_by = OTHER_ID,
+    )
+    db = setup_bulk_db([first, second])
+
+    result = orders.bulk_delete_orders(
+        request = orders.schemas.BulkOrderDeleteRequest(order_ids = [1, 2]),
+        db = db,
+        user = make_user(role="SUPERVISOR"),
+    )
+
+    assert result.deleted_order_ids == [1, 2]
+    assert result.deleted_count == 2
+    assert db.delete.call_args_list == [
+        call(first),
+        call(second),
+    ]
+    db.commit.assert_called_once()
+
+
+def test_owner_can_bulk_delete_own_unfinished_orders():
+    first = SimpleNamespace(
+        order_id = 1,
+        status = "draft",
+        created_by = OWNER_ID,
+    )
+    second = SimpleNamespace(
+        order_id = 2,
+        status = "invalid",
+        created_by = OWNER_ID,
+    )
+    db = setup_bulk_db([first, second])
+
+    result = orders.bulk_delete_orders(
+        request = orders.schemas.BulkOrderDeleteRequest(order_ids = [1, 2]),
+        db = db,
+        user = make_user(),
+    )
+
+    assert result.deleted_count == 2
+    assert db.delete.call_count == 2
+    db.commit.assert_called_once()
+
+
+def test_bulk_delete_is_all_or_nothing_for_unowned_order():
+    owned = SimpleNamespace(
+        order_id = 1,
+        status = "draft",
+        created_by = OWNER_ID,
+    )
+    unowned = SimpleNamespace(
+        order_id = 2,
+        status = "draft",
+        created_by = OTHER_ID,
+    )
+    db = setup_bulk_db([owned, unowned])
+
+    with pytest.raises(HTTPException) as error:
+        orders.bulk_delete_orders(
+            request=orders.schemas.BulkOrderDeleteRequest(order_ids = [1, 2]),
+            db = db,
+            user = make_user(),
+        )
+
+    assert error.value.status_code == 403
+    db.delete.assert_not_called()
+    db.commit.assert_not_called()
+
+
+def test_bulk_delete_is_all_or_nothing_for_processing_order():
+    completed = SimpleNamespace(
+        order_id = 1,
+        status = "completed",
+        created_by = None,
+    )
+    processing = SimpleNamespace(
+        order_id = 2,
+        status = "processing",
+        created_by = None,
+    )
+    db = setup_bulk_db([completed, processing])
+
+    with pytest.raises(HTTPException) as error:
+        orders.bulk_delete_orders(
+            request=orders.schemas.BulkOrderDeleteRequest(order_ids = [1, 2]),
+            db = db,
+            user = make_user(role="SUPERVISOR"),
+        )
+
+    assert error.value.status_code == 409
+    db.delete.assert_not_called()
+    db.commit.assert_not_called()
+
+
+def test_bulk_delete_rejects_missing_order_without_deleting():
+    existing = SimpleNamespace(
+        order_id = 1,
+        status = "draft",
+        created_by = OWNER_ID,
+    )
+    db = setup_bulk_db([existing])
+
+    with pytest.raises(HTTPException) as error:
+        orders.bulk_delete_orders(
+            request = orders.schemas.BulkOrderDeleteRequest(order_ids=[1, 999]),
+            db = db,
+            user = make_user(),
+        )
+
+    assert error.value.status_code == 404
     db.delete.assert_not_called()
     db.commit.assert_not_called()

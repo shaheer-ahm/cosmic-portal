@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
-import { Search, ChevronRight, Package, Box, Filter } from "lucide-react";
+import { use, useEffect, useState } from "react";
+import { Search, ChevronRight, Package, Box, Filter, Trash2 } from "lucide-react";
+import { useAuth } from "../lib/useAuth";
 
 import { apiFetch } from "../lib/api";
 import { useNavigate } from "react-router-dom";
@@ -13,6 +14,7 @@ interface OrderSummary {
   id: string;
   reference: string;
   status: string;
+  createdBy?: string | null;
   itemsCount: number;
   boxesCount: number;
   time: string;
@@ -23,6 +25,9 @@ interface OrderSummary {
 
 export function OrdersPage() {
   const navigate = useNavigate();
+  const { role, user } = useAuth();
+  const [selectedOrderIds, setSelectedOrderIds] = useState<Set<string>>(new Set());
+  const [deletingSelected, setDeletingSelected] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("All");
   const [orders, setOrders] = useState<OrderSummary[]>([]);
@@ -40,6 +45,7 @@ export function OrdersPage() {
           {
             order_id: number;
             status: string;
+            created_by?: string | null;
             created_at: string;
             items_count: number;
             boxes_count: number;
@@ -52,6 +58,7 @@ export function OrdersPage() {
           return {
             id: String(order.order_id),
             reference: `ORD-${order.order_id}`,
+            createdBy: order.created_by,
             status:
               order.status.charAt(0).toUpperCase() +
               order.status.slice(1),
@@ -94,6 +101,114 @@ export function OrdersPage() {
     return matchesSearch && matchesStatus;
   });
 
+  const canSelectOrder = (order: OrderSummary) => {
+    const status = order.status.toLowerCase();
+
+    if (status === "processing") {
+      return false;
+    }
+
+    if (role === "supervisor") {
+      return true;
+    }
+
+    const isOwner =
+      Boolean(user?.id) &&
+      Boolean(order.createdBy) &&
+      user!.id.toLowerCase() === order.createdBy!.toLowerCase();
+
+    return (
+      isOwner && ["draft", "invalid"].includes(status)
+    );
+  };
+
+  const selectableVisibleOrders = filteredOrders.filter(canSelectOrder);
+
+  const allVisibleSelected =
+    selectableVisibleOrders.length > 0 &&
+    selectableVisibleOrders.every((order) =>
+      selectedOrderIds.has(order.id),
+  );
+
+  const toggleOrderSelection = (orderId: string) => {
+    setSelectedOrderIds((current) => {
+      const updated = new Set(current);
+      if (updated.has(orderId)) {
+        updated.delete(orderId);
+      } else {
+        updated.add(orderId);
+      }
+      return updated;
+    });
+  };
+
+  const toggleAllVisible = () => {
+    setSelectedOrderIds((current) => {
+      const updated = new Set(current);
+      if (allVisibleSelected) {
+        selectableVisibleOrders.forEach(order => updated.delete(order.id));
+      } else {
+        selectableVisibleOrders.forEach(order => updated.add(order.id));
+      }
+
+      return updated;
+    });
+  };
+
+  const clearSelection = () => setSelectedOrderIds(new Set());
+
+  const deleteSelectedOrders = async () => {
+    const selectedCount = selectedOrderIds.size;
+
+    if (selectedCount === 0) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Permanently delete ${selectedCount} selected ${
+        selectedCount === 1 ? "order" : "orders"
+      } and all associated data?`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setDeletingSelected(true);
+
+      const result = await apiFetch<{
+        deleted_order_ids: number[];
+        deleted_count: number;
+      }>("/orders/bulk-delete", {
+        method: "POST",
+        body: JSON.stringify({
+          order_ids: Array.from(
+            selectedOrderIds,
+            Number,
+          ),
+        }),
+      });
+
+      const deletedIds = new Set(result.deleted_order_ids.map(String));
+
+      setOrders(current => current.filter(order => !deletedIds.has(order.id)));
+      clearSelection();
+
+    } catch (error) {
+      console.error("Failed to delete selected orders:", error);
+
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Failed to delete selected orders.",
+      );
+    } finally {
+      setDeletingSelected(false);
+    }
+  };
+
+
   return (
     <AppShell>
       <PageHeader
@@ -120,6 +235,7 @@ export function OrdersPage() {
             />
           </div>
 
+
           {/* Filter Pills */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
             <Filter className="h-3.5 w-3.5 text-[#6a7f99] shrink-0 mr-1" />
@@ -138,7 +254,56 @@ export function OrdersPage() {
               </button>
             ))}
           </div>
+
+          {(
+            selectableVisibleOrders.length > 0 || selectedOrderIds.size > 0
+          ) && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#dce5ee] bg-white px-4 py-3">
+              <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-[#49637e]">
+                <input
+                  type="checkbox"
+                  checked={allVisibleSelected}
+                  onChange={toggleAllVisible}
+                  disabled={
+                    selectableVisibleOrders.length == 0 ||
+                    deletingSelected
+                  }
+                  className="h-4 w-4 rounded border-[#b8c8d8] accent-[#2686d5]"
+                />
+                Select all visible
+                <span className="text-[#7187a0]">
+                  ({selectableVisibleOrders.length})
+                </span>
+              </label>
+
+              {selectedOrderIds.size > 0 && (
+                <div className="flex items-centre gap-2">
+                  <button
+                    type="button"
+                    onClick={clearSelection}
+                    disabled={deletingSelected}
+                    className="rounded-lg px-3 py-2 text-xs font-semibold text-[#607791] hover:bg-[#f4f7fb] disabled:opacity-50"
+                  >
+                    Clear
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={deleteSelectedOrders}
+                    disabled={deletingSelected}
+                    className="flex items-center gap-2 rounded-lg border border-[#d99894] bg-white px-3 py-2 text-xs font-semibold text-[#b64641] hover:bg-[#fff1f0] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    {deletingSelected
+                      ? "Deleting..."
+                      : `Delete selected (${selectedOrderIds.size})`}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
+
 
         {/* Orders Queue List */}
         <section className="mt-6 space-y-3">
@@ -183,9 +348,22 @@ export function OrdersPage() {
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
+                    {canSelectOrder(order) && (
+                      <input
+                        type="checkbox"
+                        checked={selectedOrderIds.has(order.id)}
+                        onClick={event => event.stopPropagation()}
+                        onChange={() => toggleOrderSelection(order.id)}
+                        disabled={deletingSelected}
+                        aria-label={`Select ${order.reference}`}
+                        className="h-4 w-4 shrink-0 cursor-pointer rounded border-[#b8c8d8] accent-[#2686d5]"
+                      />
+                    )}
+
                     <h3 className="text-base font-bold text-[#172f50] group-hover:text-[#1f77be] transition-colors">
                       {order.reference}
                     </h3>
+
                     <StatusBadge status={order.status} />
                   </div>
 

@@ -78,23 +78,48 @@ def create_order(
     return db_order
 
 
+@router.post("/bulk-delete", response_model = schemas.BulkOrderDeleteResponse)
+def bulk_delete_orders(request: schemas.BulkOrderDeleteRequest, db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
+    requested_ids = request.order_ids
+    found_orders = db.query(models.Order).filter(models.Order.order_id.in_(requested_ids)).all()
+
+    orders_by_id = {
+        order.order_id: order
+        for order in found_orders
+    }
+
+    missing_ids = [
+        order_id
+        for order_id in requested_ids
+        if order_id not in orders_by_id
+    ]
+
+    if missing_ids:
+        raise HTTPException(
+            status_code = 404,
+            detail = (
+                "Order(s) not found: "
+                + ", ".join(
+                    str(order_id)
+                    for order_id in missing_ids
+                )
+            ),
+        )
+
+    for order_id in requested_ids:
+        _ensure_order_can_be_deleted(orders_by_id[order_id], user)
+
+    for order_id in requested_ids:
+        db.delete(orders_by_id[order_id])
+
+    db.commit()
+    return schemas.BulkOrderDeleteResponse(deleted_order_ids = requested_ids, deleted_count = len(requested_ids))
+
+
 @router.delete("/{order_id}", status_code = 204)
 def delete_order(order_id: int, db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
     order = _get_order_or_404(db, order_id)
-    order_status = order.status.lower()
-
-    if order_status == "processing":
-        raise HTTPException(status_code = 409, detail = "An order cannot be deleted while optimisation is processing")
-
-    is_supervisor = user.get("role") == "SUPERVISOR"
-    is_owner = (order.created_by is not None and str(order.created_by).lower() == str(user.get("user_id", "")).lower())
-
-    if not is_supervisor:
-        if not is_owner:
-            raise HTTPException(status_code = 403, detail = "You may only delete orders that you create")
-
-        if order_status not in {"draft", "invalid"}:
-            raise HTTPException(status_code = 409, detail = "Users may only delete their own draft or invalid orders")
+    _ensure_order_can_be_deleted(order, user)
 
     db.delete(order)
     db.commit()
@@ -326,6 +351,36 @@ def optimise_order(
 
 
 # Helpers
+
+def _ensure_order_can_be_deleted(order: models.Order, user: dict) -> None:
+    order_status = order.status.lower()
+
+    if order_status == "processing":
+        raise HTTPException(
+            status_code = 409, detail = (
+                f"Order {order.order_id} cannot be deleted "
+                "while optimisation is processing"
+                ),
+        )
+
+    is_supervisor = user.get("role") == "SUPERVISOR"
+    is_owner = order.created_by is not None and str(order.created_by).lower() == str(user.get("user_id", "")).lower()
+
+    if is_supervisor:
+        return
+
+    if not is_owner:
+        raise HTTPException(status_code = 403, detail = f"You may only delete orders that you created (order {order.order_id})")
+
+    if order_status not in {"draft", "invalid"}:
+        raise HTTPException(
+            status_code = 409,
+            detail = (
+                "Users may only delete their own draft or "
+                f"invalid orders (order {order.order_id})"
+            ),
+        )
+
 
 def _get_order_or_404(db: Session, order_id: int) -> models.Order:
     order = db.query(models.Order).filter(models.Order.order_id == order_id).first()

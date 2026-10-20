@@ -45,6 +45,24 @@ class OrderCreate(BaseModel):
     """Orders are created empty and items are added separately."""
     pass
 
+
+class BulkOrderDeleteRequest(BaseModel):
+    order_ids: list[int] = Field(min_length = 1, max_length = 200)
+
+    @field_validator("order_ids")
+    @classmethod
+    def validate_order_ids(cls, values: list[int]) -> list[int]:
+        if any(order_id <= 0 for order_id in values):
+            raise ValueError("Order IDs must be positive integers")
+
+        return list(dict.fromkeys(values))
+
+
+class BulkOrderDeleteResponse(BaseModel):
+    deleted_order_ids: list[int]
+    deleted_count: int
+
+
 class OrderOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
  
