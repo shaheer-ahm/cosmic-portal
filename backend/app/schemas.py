@@ -50,6 +50,7 @@ class OrderOut(BaseModel):
  
     order_id: int
     status: str
+    created_by: Optional[str] = None
     created_at: datetime
 
 class OrderSummaryOut(OrderOut):

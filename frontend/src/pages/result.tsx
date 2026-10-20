@@ -2,9 +2,10 @@ import {
   Box,
   Download,
   Package,
+  Trash2,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { boxSlug } from "@comp4050-fiv/visualizer";
 
 import { apiFetch } from "../lib/api";
@@ -30,6 +31,7 @@ interface OrderItem {
 interface OrderDetails {
   order_id: number;
   status: string;
+  created_by?: string | null;
   created_at: string;
   items: OrderItem[];
   box_types: string[];
@@ -125,7 +127,8 @@ interface PackingResultResponse {
 export function ResultPage() {
   const { orderId } = useParams();
   
-  const { role } = useAuth();
+  const navigate = useNavigate();
+  const { role, user } = useAuth();
 
   const [realOrder, setRealOrder] =
     useState<OrderDetails | null>(null);
@@ -135,6 +138,8 @@ export function ResultPage() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const [deleting, setDeleting] = useState(false);
 
   const [validating, setValidating] =
     useState(false);
@@ -242,6 +247,25 @@ export function ResultPage() {
       0,
     );
 
+    const normalizedStatus =
+      realOrder.status.toLowerCase();
+
+    const isOrderOwner =
+      Boolean(user?.id) &&
+      Boolean(realOrder.created_by) &&
+      user!.id.toLowerCase() ===
+        realOrder.created_by!.toLowerCase();
+
+    const canDeleteOrder =
+    normalizedStatus !== "processing" &&
+    (
+      role === "supervisor" ||
+      (
+        isOrderOwner &&
+        ["draft", "invalid"].includes(normalizedStatus)
+      )
+    );
+
   const refreshOrder = async () => {
     const updatedOrder =
       await apiFetch<OrderDetails>(
@@ -337,6 +361,42 @@ export function ResultPage() {
     }
   };
 
+  const deleteOrder = async () => {
+    const confirmed = window.confirm(`Delete ${orderRef}? This permanently removes the order and its associated data.`);
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setDeleting(true);
+
+      await apiFetch<void>(
+        `/orders/${realOrder.order_id}`,
+        {
+          method: "DELETE",
+        },
+      );
+
+      navigate("/orders", {
+        replace: true,
+      });
+    } catch (err) {
+      console.error(
+        "Failed to delete order:",
+        err,
+      );
+
+      alert(
+        err instanceof Error
+          ? err.message
+          : "Failed to delete order.",
+      );
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const exportOrder = () => {
     const exportData = {
       order: realOrder,
@@ -409,6 +469,22 @@ export function ResultPage() {
             )}
           </p>
         </section>
+
+        {canDeleteOrder && (
+          <section className="mt-4">
+            <button
+              type="button"
+              onClick={deleteOrder}
+              disabled={deleting}
+              className="flex w-full items-center justify-center gap-2 rounded-x1 border-[#d99894] bg-white px-4 py-3 text-sm font-semibold text-[#b64641] transition-colors hover:bg-[#fff1f0] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Trash2 className="h-4 w-4" />
+                {deleting
+                  ? "Deleting order..."
+                  : "Delete Order"}
+              </button>
+          </section>
+        )}
 
         {/* Order summary */}
         <section className="mt-5 grid grid-cols-3 gap-3">

@@ -11,6 +11,7 @@ class Order(Base):
 
     order_id = Column(Integer, primary_key=True, autoincrement=True)
     status = Column(String(50), nullable=False, default="draft")
+    created_by = Column(UUID(as_uuid = False), ForeignKey("profiles.user_id", ondelete = "SET NULL"), nullable = True, index = True)
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")

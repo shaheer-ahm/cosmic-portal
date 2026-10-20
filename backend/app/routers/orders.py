@@ -52,6 +52,7 @@ def list_orders(db: Session = Depends(get_db), user: dict = Depends(get_current_
         schemas.OrderSummaryOut(
             order_id=order.order_id,
             status=order.status,
+            created_by=order.created_by,
             created_at=order.created_at,
             items_count=items_count,
             boxes_count=boxes_count,
@@ -70,11 +71,34 @@ def get_order(order_id: int, db: Session = Depends(get_db), user: dict = Depends
 def create_order(
     order: schemas.OrderCreate, db: Session = Depends(get_db), user: dict = Depends(get_current_user)
 ):
-    db_order = models.Order(status="draft")
+    db_order = models.Order(status="draft", created_by=user["user_id"])
     db.add(db_order)
     db.commit()
     db.refresh(db_order)
     return db_order
+
+
+@router.delete("/{order_id}", status_code = 204)
+def delete_order(order_id: int, db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
+    order = _get_order_or_404(db, order_id)
+    order_status = order.status.lower()
+
+    if order_status == "processing":
+        raise HTTPException(status_code = 409, detail = "An order cannot be deleted while optimisation is processing")
+
+    is_supervisor = user.get("role") == "SUPERVISOR"
+    is_owner = (order.created_by is not None and str(order.created_by).lower() == str(user.get("user_id", "")).lower())
+
+    if not is_supervisor:
+        if not is_owner:
+            raise HTTPException(status_code = 403, detail = "You may only delete orders that you create")
+
+        if order_status not in {"draft", "invalid"}:
+            raise HTTPException(status_code = 409, detail = "Users may only delete their own draft or invalid orders")
+
+    db.delete(order)
+    db.commit()
+    return Response(status_code = 204)
 
 
 # Box type selection
@@ -313,6 +337,7 @@ def _order_with_box_types(order: models.Order) -> schemas.OrderWithItemsOut:
     return schemas.OrderWithItemsOut(
         order_id=order.order_id,
         status=order.status,
+        created_by=order.created_by,
         created_at=order.created_at,
         items=[schemas.ItemOut.model_validate(item) for item in order.items],
         box_types=[obt.Reference for obt in order.box_types],

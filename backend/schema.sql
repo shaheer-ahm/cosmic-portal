@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS orders (
     order_id        INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     status          VARCHAR(50) NOT NULL DEFAULT 'draft',
     -- status values: draft, validated, processing, completed, invalid
+    created_by      UUID NULL,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
