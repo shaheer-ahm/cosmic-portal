@@ -24,6 +24,8 @@ import { useAuth } from "../lib/useAuth";
 
 import type { BoxType, PackerItem } from "../types/domain";
 
+import { JsonItemImporter } from "../components/orders/JsonItemImporter";
+
 const blankItem = (): PackerItem => ({
   ItemCode: "",
   ItemReference: "",
@@ -397,11 +399,12 @@ export function NewOrderPage() {
       }
 
       if (
+        !item.Quantity ||
         !Number.isInteger(item.Quantity) ||
         item.Quantity < 1
       ) {
         errors.push(
-          `Item ${number}: Quantity must be a whole number of at least 1.`
+          `Item ${number}: Quantity is mandatory and must be a whole number of at least 1.`
         );
       }
     });
