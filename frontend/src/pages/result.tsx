@@ -95,7 +95,7 @@ interface PackedBox {
   ItemsWeight: number;
   BoxWeight: number;
   TotalWeight: number;
-  MaxWeight: number;
+  MaxWeight?: number | null;
   VolumeUtilisation: number;
   LoadHeight: number;
 
@@ -905,16 +905,15 @@ export function ResultPage() {
                                     Weight
                                   </p>
 
-                                  <p className="mt-1 text-[#283f5b]">
-                                    {box.TotalWeight.toFixed(
-                                      2,
-                                    )}{" "}
-                                    /{" "}
-                                    {box.MaxWeight.toFixed(
-                                      2,
-                                    )}{" "}
-                                    kg
-                                  </p>
+                                    <p className="mt-1 text-[#283f5b]">
+                                      {box.TotalWeight.toFixed(
+                                        2,
+                                      )}{" "}
+                                      kg /{" "}
+                                      {box.MaxWeight != null
+                                        ? `${box.MaxWeight.toFixed(2)} kg`
+                                        : "no limit"}
+                                    </p>
                                 </div>
 
                                 <div>

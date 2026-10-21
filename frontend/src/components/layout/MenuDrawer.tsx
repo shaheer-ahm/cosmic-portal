@@ -1,12 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { LogOut } from 'lucide-react';
 import { RoleGuard } from '../RoleGuard';
 import { useAuth } from '../../lib/useAuth';
+import { supabase } from '../../lib/supabase';
 
 export const MenuDrawer: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const { role } = useAuth();
+
+  const { role, user } = useAuth();
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Logout failed:', error);
+      setLoggingOut(false);
+      return;
+    }
+    window.location.href = '/';
+  };
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -71,6 +86,21 @@ export const MenuDrawer: React.FC = () => {
               Profiles Management
             </Link>
           </RoleGuard>
+          <div className="my-1 border-t border-[#dbe5ee]" />
+          {user?.email && (
+            <p className="truncate px-4 pt-1.5 text-xs text-[#6a7f99]" title={user.email}>
+              Signed in as {user.email}
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={() => void handleLogout()}
+            disabled={loggingOut}
+            className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-medium text-[#b64641] transition hover:bg-[#fff1ef] disabled:opacity-60"
+          >
+            <LogOut className="h-4 w-4" />
+            {loggingOut ? 'Logging out...' : 'Log out'}
+          </button>
         </div>
       )}
     </div>
