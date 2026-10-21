@@ -2,6 +2,8 @@ import { supabase } from "./supabase";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+const FITSOLVER_API_KEY = import.meta.env.VITE_FITSOLVER_API_KEY;
+
 if (!API_BASE_URL) {
   throw new Error("Missing VITE_API_BASE_URL.");
 }
@@ -25,6 +27,10 @@ export async function apiFetch<T>(
       "Authorization",
       `Bearer ${session.access_token}`,
     );
+  }
+
+  if (path.includes("/pack") && FITSOLVER_API_KEY) {
+    headers.set("X-API-Key", FITSOLVER_API_KEY);
   }
 
   const response = await fetch(
