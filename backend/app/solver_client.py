@@ -11,7 +11,7 @@ from app import models, schemas
 load_dotenv()
 
 SOLVER_URL = (os.getenv("SOLVER_URL") or "").rstrip("/")
-# TODO: SOLVER_API_KEY = os.getenv("SOLVER_API_KEY")
+FITSOLVER_API_KEY = os.getenv("FITSOLVER_API_KEY") or os.getenv("X_API_KEY")
 
 SOLVER_TIMEOUT_SECONDS = 55.0
 SOLVER_HEALTH_TIMEOUT_SECONDS = 15.0
@@ -87,7 +87,8 @@ def call_solver(
     }
 
     headers = {"Content-Type": "application/json"}
-    # TODO: headers["X-API-Key"] = SOLVER_API_KEY
+    if FITSOLVER_API_KEY:
+        headers["X-API-Key"] = FITSOLVER_API_KEY
 
     try:
         resp = httpx.post(
