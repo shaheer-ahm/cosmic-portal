@@ -41,6 +41,17 @@ class ItemOut(ItemBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class BoxTypeCreate(BaseModel):
+    Reference: str = Field(min_length=1, max_length=50)
+    Width: float = Field(gt=0)
+    Length: float = Field(gt=0)
+    Depth: float = Field(gt=0)
+    MaxWeight: Optional[float] = Field(default=None, gt=0)
+    BoxWeight: Optional[float] = Field(default=None, ge=0)
+    MaximumBoxes: Optional[int] = Field(default=None, ge=1)
+
+
+
 class OrderCreate(BaseModel):
     """Orders are created empty and items are added separately."""
     pass
