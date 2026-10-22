@@ -1,7 +1,9 @@
+
 import { useEffect, useState } from "react";
 import { LogOut } from "lucide-react";
 
 import { MenuDrawer } from "./MenuDrawer";
+import { PortalBrand } from "./PortalBrand";
 import { supabase } from "../../lib/supabase";
 
 export function BrandHeader({
@@ -26,17 +28,17 @@ export function BrandHeader({
 
       const metadata = user.user_metadata ?? {};
 
-      const name =
+      setUserName(
         metadata.full_name ||
         metadata.name ||
         metadata.display_name ||
-        "";
+        "",
+      );
 
-      setUserName(name);
       setUserEmail(user.email ?? "");
     };
 
-    loadUser();
+    void loadUser();
 
     const {
       data: { subscription },
@@ -50,23 +52,20 @@ export function BrandHeader({
           return;
         }
 
-        const metadata =
-          user.user_metadata ?? {};
+        const metadata = user.user_metadata ?? {};
 
         setUserName(
           metadata.full_name ||
-            metadata.name ||
-            metadata.display_name ||
-            "",
+          metadata.name ||
+          metadata.display_name ||
+          "",
         );
 
         setUserEmail(user.email ?? "");
       },
     );
 
-    return () => {
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   const handleLogout = async () => {
@@ -74,15 +73,10 @@ export function BrandHeader({
       await supabase.auth.signOut();
 
     if (error) {
-      console.error(
-        "Logout failed:",
-        error,
-      );
+      console.error("Logout failed:", error);
       return;
     }
 
-    // Your auth guard should send a logged-out
-    // user back to the authentication page.
     window.location.href = "/";
   };
 
@@ -93,16 +87,17 @@ export function BrandHeader({
 
   return (
     <header className="cf-top-header">
-      <div className="cf-top-inner flex items-center justify-between gap-4">
-        {/* Left side */}
-        <div className="flex items-center gap-3">
+      <div className="cf-top-inner flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <MenuDrawer />
 
-          <div className="cf-top-brand-icon">
-            CF
+          {/* Mobile branding */}
+          <div className="min-w-0 md:hidden">
+            <PortalBrand compact />
           </div>
 
-          <div>
+          {/* Page title */}
+          <div className="hidden min-w-0 md:block">
             <p className="cf-eyebrow">
               Warehouse operations
             </p>
@@ -113,8 +108,8 @@ export function BrandHeader({
           </div>
         </div>
 
-        {/* Logged-in user */}
-        <div className="hidden items-center gap-3 sm:flex">
+        {/* Logged-in user - desktop */}
+        <div className="hidden items-center gap-3 md:flex">
           <div className="rounded-lg border border-[#dbe5ee] bg-[#f7f9fc] px-4 py-2">
             <div className="flex items-center gap-2">
               <span className="h-2.5 w-2.5 rounded-full bg-green-400" />
@@ -135,13 +130,21 @@ export function BrandHeader({
 
           <button
             type="button"
-            onClick={handleLogout}
+            onClick={() => void handleLogout()}
             title="Logout"
+            aria-label="Log out"
             className="grid h-10 w-10 place-items-center rounded-lg border border-[#dbe5ee] bg-white text-[#71849a] transition-colors hover:border-red-400/40 hover:text-[#b64641]"
           >
             <LogOut className="h-4 w-4" />
           </button>
         </div>
+      </div>
+
+      {/* Mobile page title */}
+      <div className="border-t border-[#edf1f5] px-4 py-2 md:hidden">
+        <p className="truncate text-sm font-bold text-[#172f50]">
+          {title}
+        </p>
       </div>
     </header>
   );

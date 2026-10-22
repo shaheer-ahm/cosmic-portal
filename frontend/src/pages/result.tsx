@@ -540,8 +540,10 @@ export function ResultPage() {
                       <Link
                         key={box.BoxIndex}
                         to={`/orders/${realOrder.order_id}/boxes/${boxSlug(box.BoxIndex)}`}
-                        className="block"
+                        aria-label={`View visualisation for Box ${box.BoxIndex + 1}`}
+                        className="group block cursor-pointer rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5282ce]"
                       >
+
                         <Card className="p-4 transition-colors hover:border-[#86bde8]">
                           <div className="flex items-start gap-3">
                             <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#e7f3ff] text-[#2582ce]">
@@ -550,12 +552,12 @@ export function ResultPage() {
 
                             <div className="min-w-0 flex-1">
                               <div className="flex items-start justify-between gap-3">
-                                <div>
+                                <div className="min-w-0">
                                   <h3 className="font-semibold text-[#172f50]">
                                     Box {box.BoxIndex + 1}
                                   </h3>
 
-                                  <p className="mt-1 text-xs text-[#236eaf]">
+                                  <p className="mt-1 break-words text-xs text-[#236eaf]">
                                     {box.Reference}
                                   </p>
 
@@ -566,13 +568,19 @@ export function ResultPage() {
                                   )}
                                 </div>
 
-                                <span className="rounded-full bg-[#eaf9f0] px-3 py-1 text-xs font-semibold text-[#137452]">
-                                  {box.ItemCount}{" "}
-                                  {box.ItemCount === 1
-                                    ? "item"
-                                    : "items"}
-                                </span>
+                                <div className="flex shrink-0 flex-col items-end gap-3">
+                                  <span className="rounded-full bg-[#eaf9f0] px-3 py-1 text-xs font-semibold text-[#137452]">
+                                    {box.ItemCount}{" "}
+                                    {box.ItemCount === 1 ? "item" : "items"}
+                                  </span>
+
+                                  {/* View visualisation */}
+                                  <span className="inline-flex min-h-10 items-center justify-center rounded-lg bg-[#5282ce] px-5 py-2 text-sm font-semibold text-white transition-colors group-hover:bg-[#346fbd]">
+                                    View
+                                  </span>
+                                </div>
                               </div>
+
 
                               <div className="mt-4 grid grid-cols-1 gap-3 text-xs sm:grid-cols-2">
                                 <div>

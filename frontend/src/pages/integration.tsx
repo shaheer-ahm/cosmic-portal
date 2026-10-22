@@ -257,15 +257,20 @@ export const Integration: React.FC = () => {
         <div className="mb-6 flex items-center justify-between pt-2">
           <div className="flex items-center gap-3">
             <MenuDrawer />
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#2686d5] text-sm font-bold">
-              CF
-            </div>
-            <div>
-              <p className="font-mono text-[10px] uppercase tracking-widest text-[#72859d]">
-                COSMIC FIT
+            <div className="min-w-0">
+              <img
+                src="/thomax-logo.png"
+                alt="Thomax"
+                className="mb-1 h-9 w-auto max-w-[170px] object-contain object-left"
+              />
+              <p className="text-[11px] font-medium text-[#72859d]">
+                Cosmic Fit
               </p>
-              <h1 className="text-xl font-bold">Integration</h1>
+              <h1 className="mt-1 text-xl font-bold text-[#172f50]">
+                Integration
+              </h1>
             </div>
+
           </div>
         </div>
 

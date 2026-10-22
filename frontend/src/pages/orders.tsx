@@ -101,12 +101,12 @@ export function OrdersPage() {
     // Filter by order status
     const matchesStatus =
       statusFilter === "All" ||
-      statusFilter === "Own Orders" ||
+      statusFilter === "Your Orders" ||
       order.status.toLowerCase() === statusFilter.toLowerCase();
 
     // Identify orders belonging to the logged-in user
     const matchesOwner =
-      statusFilter !== "Own Orders" ||
+      statusFilter !== "Your Orders" ||
       (
         Boolean(user?.id) &&
         Boolean(order.createdBy) &&
@@ -254,7 +254,7 @@ export function OrdersPage() {
           {/* Filter Pills */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
             <Filter className="h-3.5 w-3.5 text-[#6a7f99] shrink-0 mr-1" />
-            {["All", "Own Orders", "Draft", "Validated" , "Completed", "Processing", "Invalid"].map((filter) => (
+            {["All", "Your Orders", "Draft", "Validated" , "Completed", "Processing", "Invalid"].map((filter) => (
               <button
                 key={filter}
                 type="button"
@@ -351,7 +351,7 @@ export function OrdersPage() {
               <Package className="h-8 w-8 text-[#6a7f99] mx-auto mb-2" />
               <p className="text-sm font-semibold text-[#172f50]">No orders found</p>
               <p className="text-xs text-[#6a7f99] mt-1">
-                {statusFilter === "Own Orders"
+                {statusFilter === "Your Orders"
                   ? "You haven't created any orders matching your search."
                   : "Try adjusting your search query or status filter."}
               </p>

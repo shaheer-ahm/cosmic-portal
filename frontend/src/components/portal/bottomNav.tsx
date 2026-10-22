@@ -1,9 +1,10 @@
+
 import {
   ClipboardList,
   LayoutGrid,
   Plus,
-  Zap,
 } from "lucide-react";
+
 import {
   Link,
   useLocation,
@@ -14,57 +15,49 @@ export default function BottomNav() {
 
   const dashboardActive =
     location.pathname === "/dashboard";
-  const ordersActive = 
-    location.pathname.startsWith("/orders") && location.pathname !== "/orders/new";
-  const integrationActive = 
-    location.pathname === "/integration";
+
+  const newOrderActive =
+    location.pathname === "/orders/new";
+
+  const ordersActive =
+    location.pathname.startsWith("/orders") &&
+    !newOrderActive;
+
+  const navClass = (active: boolean) =>
+    `flex flex-col items-center justify-center gap-1 text-[11px] font-semibold ${
+      active
+        ? "text-[#2582ce]"
+        : "text-[#6e8199]"
+    }`;
 
   return (
     <nav className="cf-bottom-nav">
+      {/* Dashboard */}
       <Link
         to="/dashboard"
-        className={`flex flex-col items-center gap-1 text-[11px] ${
-          dashboardActive
-            ? "text-[#2582ce]"
-            : "text-[#6e8199]"
-        }`}
+        className={navClass(dashboardActive)}
       >
         <LayoutGrid className="h-6 w-6" />
         <span>Dashboard</span>
       </Link>
 
-      <Link
-        to="/orders"
-        className={`flex flex-col items-center gap-1 text-[11px] ${
-          ordersActive
-            ? "text-[#2582ce]"
-            : "text-[#6e8199]"
-        }`}
-       
-      >
-        <ClipboardList className="h-6 w-6" />
-        <span>Orders</span>
-      </Link>
-
+      {/* New Order - Middle */}
       <Link
         to="/orders/new"
         aria-label="Create new order"
-        className="flex flex-col items-center justify-center gap-1 text-[11px] font-semibold text-[#6e8199]"
+        className={navClass(newOrderActive)}
       >
         <Plus className="h-6 w-6" />
         <span>New order</span>
       </Link>
 
+      {/* Orders */}
       <Link
-        to="/integration"
-        className={`flex flex-col items-center gap-1 text-[11px] ${
-          integrationActive
-            ? "text-[#2582ce]"
-            : "text-[#6e8199]"
-        }`}
+        to="/orders"
+        className={navClass(ordersActive)}
       >
-        <Zap className="h-6 w-6" />
-        <span>Integr.</span>
+        <ClipboardList className="h-6 w-6" />
+        <span>Orders</span>
       </Link>
     </nav>
   );

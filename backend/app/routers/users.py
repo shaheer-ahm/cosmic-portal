@@ -1,6 +1,11 @@
 import logging
 import uuid
 
+import os
+import httpx
+from fastapi import status
+
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -51,3 +56,77 @@ def update_user_role(
         target_id, old_role, body.role, current_user["user_id"],
     )
     return profile
+
+@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_user(
+    user_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_supervisor),
+):
+    target_id = str(user_id)
+
+    # Supervisors cannot delete themselves.
+    if target_id == str(current_user["user_id"]).lower():
+        raise HTTPException(
+            status_code=400,
+            detail="You cannot delete your own account.",
+        )
+
+    profile = (
+        db.query(models.Profile)
+        .filter(models.Profile.user_id == target_id)
+        .first()
+    )
+
+    if profile is None:
+        raise HTTPException(
+            status_code=404,
+            detail="User profile not found.",
+        )
+
+    supabase_url = os.getenv("SUPABASE_URL", "").rstrip("/")
+    
+    service_key = os.getenv("SUPABASE_SECRET_KEY", "")
+
+
+    if not supabase_url or not service_key:
+        raise HTTPException(
+            status_code=503,
+            detail="Supabase Admin API is not configured.",
+        )
+
+    try:
+        response = httpx.delete(
+            f"{supabase_url}/auth/v1/admin/users/{target_id}",
+            headers={
+                "apikey": service_key,
+                "Authorization": f"Bearer {service_key}",
+            },
+            timeout=15.0,
+        )
+    except httpx.RequestError:
+        logger.exception("Supabase user deletion request failed")
+        raise HTTPException(
+            status_code=502,
+            detail="Could not contact Supabase Auth.",
+        )
+
+    if response.status_code not in (200, 204):
+        logger.error(
+            "Supabase deletion failed for user %s: %s",
+            target_id,
+            response.status_code,
+        )
+        raise HTTPException(
+            status_code=502,
+            detail="Supabase Auth refused the deletion.",
+        )
+
+    # Supabase auth.users -> public.profiles uses ON DELETE CASCADE.
+    # The database should remove the profile automatically.
+    # Existing orders use ON DELETE SET NULL for created_by.
+    logger.info(
+        "user deleted: user=%s by supervisor=%s",
+        target_id,
+        current_user["user_id"],
+    )
