@@ -228,6 +228,7 @@ export function OrdersPage() {
     <AppShell>
       <PageHeader
         title="Orders Queue"
+        backTo="/dashboard"
         right={
           <span className="bg-white border border-[#dce5ee] text-[#49637e] text-xs px-3 py-1 rounded-full flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-[#2686d5]"></span>

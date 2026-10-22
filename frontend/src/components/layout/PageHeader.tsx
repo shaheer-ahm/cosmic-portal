@@ -8,11 +8,13 @@ import { MenuDrawer } from "./MenuDrawer";
 type PageHeaderProps = {
   title: string;
   right?: ReactNode;
+  backTo?: string;
 };
 
 export function PageHeader({
   title,
   right,
+  backTo = "/dashboard",
 }: PageHeaderProps) {
   const navigate = useNavigate();
 
@@ -52,7 +54,7 @@ export function PageHeader({
           <div className="flex min-w-0 items-center gap-2">
             <button
               type="button"
-              onClick={() => navigate(-1)}
+              onClick={() => navigate(backTo)}
               aria-label="Go back"
               className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-[#dfe8f1] bg-white text-[#3d6181] transition-colors hover:bg-[#eaf3fb]"
             >
@@ -82,7 +84,7 @@ export function PageHeader({
           <div className="flex min-w-0 items-center gap-3">
             <button
               type="button"
-              onClick={() => navigate(-1)}
+              onClick={() => navigate(backTo)}
               aria-label="Go back"
               className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-[#dfe8f1] bg-white text-[#3d6181] transition-colors hover:bg-[#eaf3fb]"
             >

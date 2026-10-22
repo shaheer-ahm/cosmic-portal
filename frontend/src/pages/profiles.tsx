@@ -151,7 +151,8 @@ export default function ProfileManagementPage() {
   return (
     <AppShell>
       <div className="cf-page">
-        <PageHeader title="Supervisor Dashboard" />
+        <PageHeader title="Supervisor Dashboard" backTo="/dashboard" />
+        
 
         <div className="mt-6 rounded-xl border border-[#dce5ee] bg-white p-4 shadow-sm sm:p-6">
           <h2 className="text-xl font-bold text-[#172f50]">

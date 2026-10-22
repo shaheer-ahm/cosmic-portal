@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 
 import { AppShell } from "../components/layout/AppShell";
-import { MenuDrawer } from "../components/layout/MenuDrawer";
+import { PageHeader } from "../components/layout/PageHeader";
 import { apiFetch } from "../lib/api";
 
 interface IntegrationComponentStatus {
@@ -253,26 +253,14 @@ export const Integration: React.FC = () => {
 
   return (
     <AppShell>
-      <div className="cf-page cf-integration">
-        <div className="mb-6 flex items-center justify-between pt-2">
-          <div className="flex items-center gap-3">
-            <MenuDrawer />
-            <div className="min-w-0">
-              <img
-                src="/thomax-logo.png"
-                alt="Thomax"
-                className="mb-1 h-9 w-auto max-w-[170px] object-contain object-left"
-              />
-              <p className="text-[11px] font-medium text-[#72859d]">
-                Cosmic Fit
-              </p>
-              <h1 className="mt-1 text-xl font-bold text-[#172f50]">
-                Integration
-              </h1>
-            </div>
+      {/* Shared header - same as Orders page */}
+      <PageHeader
+        title="Integration"
+        backTo="/dashboard"
+      />
 
-          </div>
-        </div>
+      <main className="cf-page cf-integration">
+
 
         <div className="mb-6">
           <p className="mb-3 font-mono text-[11px] uppercase tracking-wider text-[#72859d]">
@@ -384,7 +372,7 @@ export const Integration: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
+      </main>
     </AppShell>
   );
 };

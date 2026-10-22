@@ -571,7 +571,8 @@ export function NewOrderPage() {
 
   return (
     <AppShell>
-      <PageHeader title="New Order" />
+
+      <PageHeader title="New Order" backTo="/dashboard" />
 
       <main className="cf-page">
         {/* Order reference */}
