@@ -1,16 +1,11 @@
-import {
-  Box,
-  Download,
-  Package,
-  Trash2,
-} from "lucide-react";
+
+import { Box, Download, Package, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { boxSlug } from "@comp4050-fiv/visualizer";
 
 import { apiFetch } from "../lib/api";
 import { useAuth } from "../lib/useAuth";
-
 import { AppShell } from "../components/layout/AppShell";
 import { PageHeader } from "../components/layout/PageHeader";
 import { Card } from "../components/ui/Card";
@@ -60,23 +55,19 @@ interface PackedItem {
   ItemCode: string;
   ItemReference: string;
   BoxGroup?: string | null;
-
   Position: {
     X: number;
     Y: number;
     Z: number;
   };
-
   Dimensions: {
     Width: number;
     Length: number;
     Depth: number;
   };
-
   Orientation: {
     Code: string;
   };
-
   Weight: number;
 }
 
@@ -84,13 +75,11 @@ interface PackedBox {
   BoxIndex: number;
   Reference: string;
   BoxGroup?: string | null;
-
   Dimensions: {
     Width: number;
     Length: number;
     Depth: number;
   };
-
   ItemCount: number;
   ItemsWeight: number;
   BoxWeight: number;
@@ -98,7 +87,6 @@ interface PackedBox {
   MaxWeight?: number | null;
   VolumeUtilisation: number;
   LoadHeight: number;
-
   Items: PackedItem[];
 }
 
@@ -126,26 +114,18 @@ interface PackingResultResponse {
 
 export function ResultPage() {
   const { orderId } = useParams();
-  
   const navigate = useNavigate();
   const { role, user } = useAuth();
 
-  const [realOrder, setRealOrder] =
-    useState<OrderDetails | null>(null);
-
+  const [realOrder, setRealOrder] = useState<OrderDetails | null>(null);
   const [packingResult, setPackingResult] =
     useState<PackingResultResponse | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
   const [deleting, setDeleting] = useState(false);
-
-  const [validating, setValidating] =
-    useState(false);
-
-  const [optimising, setOptimising] =
-    useState(false);
+  const [validating, setValidating] = useState(false);
+  const [optimising, setOptimising] = useState(false);
 
   useEffect(() => {
     if (!orderId) {
@@ -159,32 +139,22 @@ export function ResultPage() {
         setLoading(true);
         setError("");
 
-        const data =
-          await apiFetch<OrderDetails>(
-            `/orders/${orderId}`,
-          );
+        const data = await apiFetch<OrderDetails>(
+          `/orders/${orderId}`,
+        );
 
         setRealOrder(data);
 
-        if (
-          data.status.toLowerCase() ===
-          "completed"
-        ) {
-          const result =
-            await apiFetch<PackingResultResponse>(
-              `/orders/${data.order_id}/results`,
-            );
-
+        if (data.status.toLowerCase() === "completed") {
+          const result = await apiFetch<PackingResultResponse>(
+            `/orders/${data.order_id}/results`,
+          );
           setPackingResult(result);
         } else {
           setPackingResult(null);
         }
       } catch (err) {
-        console.error(
-          "Failed to load order:",
-          err,
-        );
-
+        console.error("Failed to load order:", err);
         setError(
           err instanceof Error
             ? err.message
@@ -216,7 +186,6 @@ export function ResultPage() {
             <p className="text-sm font-semibold text-[#b64641]">
               Unable to load order
             </p>
-
             <p className="mt-2 text-xs text-[#6a7f99]">
               {error || "Order not found."}
             </p>
@@ -226,54 +195,40 @@ export function ResultPage() {
     );
   }
 
-  const orderRef =
-    `ORD-${realOrder.order_id}`;
+  const orderRef = `ORD-${realOrder.order_id}`;
 
   const displayStatus =
-    realOrder.status
-      .charAt(0)
-      .toUpperCase() +
+    realOrder.status.charAt(0).toUpperCase() +
     realOrder.status.slice(1);
 
-  const createdAt =
-    new Date(realOrder.created_at);
+  const createdAt = new Date(realOrder.created_at);
 
-  const totalWeight =
-    realOrder.items.reduce(
-      (total, item) =>
-        total +
-        item.Weight *
-          (item.Quantity ?? 1),
-      0,
-    );
+  const totalWeight = realOrder.items.reduce(
+    (total, item) =>
+      total + item.Weight * (item.Quantity ?? 1),
+    0,
+  );
 
-    const normalizedStatus =
-      realOrder.status.toLowerCase();
+  const normalizedStatus = realOrder.status.toLowerCase();
 
-    const isOrderOwner =
-      Boolean(user?.id) &&
-      Boolean(realOrder.created_by) &&
-      user!.id.toLowerCase() ===
-        realOrder.created_by!.toLowerCase();
+  const isOrderOwner =
+    Boolean(user?.id) &&
+    Boolean(realOrder.created_by) &&
+    user!.id.toLowerCase() ===
+      realOrder.created_by!.toLowerCase();
 
-    const canDeleteOrder =
+  const canDeleteOrder =
     normalizedStatus !== "processing" &&
-    (
-      role === "supervisor" ||
-      (
-        isOrderOwner &&
-        ["draft", "invalid"].includes(normalizedStatus)
-      )
-    );
+    (role === "supervisor" ||
+      (isOrderOwner &&
+        ["draft", "invalid"].includes(normalizedStatus)));
 
   const refreshOrder = async () => {
-    const updatedOrder =
-      await apiFetch<OrderDetails>(
-        `/orders/${realOrder.order_id}`,
-      );
+    const updatedOrder = await apiFetch<OrderDetails>(
+      `/orders/${realOrder.order_id}`,
+    );
 
     setRealOrder(updatedOrder);
-
     return updatedOrder;
   };
 
@@ -281,32 +236,22 @@ export function ResultPage() {
     try {
       setValidating(true);
 
-      const result =
-        await apiFetch<ValidateResponse>(
-          `/orders/${realOrder.order_id}/validate`,
-          {
-            method: "POST",
-          },
-        );
+      const result = await apiFetch<ValidateResponse>(
+        `/orders/${realOrder.order_id}/validate`,
+        { method: "POST" },
+      );
 
       if (!result.valid) {
         alert(
           result.issues
-            .map(
-              (issue) =>
-                issue.message,
-            )
+            .map((issue) => issue.message)
             .join("\n"),
         );
       }
 
       await refreshOrder();
     } catch (err) {
-      console.error(
-        "Failed to validate order:",
-        err,
-      );
-
+      console.error("Failed to validate order:", err);
       alert(
         err instanceof Error
           ? err.message
@@ -321,21 +266,14 @@ export function ResultPage() {
     try {
       setOptimising(true);
 
-      const result =
-        await apiFetch<OptimiseResponse>(
-          `/orders/${realOrder.order_id}/optimise`,
-          {
-            method: "POST",
-          },
-        );
+      const result = await apiFetch<OptimiseResponse>(
+        `/orders/${realOrder.order_id}/optimise`,
+        { method: "POST" },
+      );
 
-      const updatedOrder =
-        await refreshOrder();
+      const updatedOrder = await refreshOrder();
 
-      if (
-        updatedOrder.status.toLowerCase() ===
-        "completed"
-      ) {
+      if (updatedOrder.status.toLowerCase() === "completed") {
         const packingData =
           await apiFetch<PackingResultResponse>(
             `/orders/${realOrder.order_id}/results`,
@@ -346,11 +284,7 @@ export function ResultPage() {
 
       alert(result.message);
     } catch (err) {
-      console.error(
-        "Optimisation failed:",
-        err,
-      );
-
+      console.error("Optimisation failed:", err);
       alert(
         err instanceof Error
           ? err.message
@@ -362,31 +296,23 @@ export function ResultPage() {
   };
 
   const deleteOrder = async () => {
-    const confirmed = window.confirm(`Delete ${orderRef}? This permanently removes the order and its associated data.`);
+    const confirmed = window.confirm(
+      `Delete ${orderRef}? This permanently removes the order and its associated data.`,
+    );
 
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     try {
       setDeleting(true);
 
       await apiFetch<void>(
         `/orders/${realOrder.order_id}`,
-        {
-          method: "DELETE",
-        },
+        { method: "DELETE" },
       );
 
-      navigate("/orders", {
-        replace: true,
-      });
+      navigate("/orders", { replace: true });
     } catch (err) {
-      console.error(
-        "Failed to delete order:",
-        err,
-      );
-
+      console.error("Failed to delete order:", err);
       alert(
         err instanceof Error
           ? err.message
@@ -404,28 +330,15 @@ export function ResultPage() {
     };
 
     const blob = new Blob(
-      [
-        JSON.stringify(
-          exportData,
-          null,
-          2,
-        ),
-      ],
-      {
-        type: "application/json",
-      },
+      [JSON.stringify(exportData, null, 2)],
+      { type: "application/json" },
     );
 
-    const url =
-      URL.createObjectURL(blob);
-
-    const link =
-      document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
 
     link.href = url;
-    link.download =
-      `${orderRef}.json`;
-
+    link.download = `${orderRef}.json`;
     link.click();
 
     URL.revokeObjectURL(url);
@@ -435,15 +348,14 @@ export function ResultPage() {
     <AppShell>
       <PageHeader
         title={orderRef}
-        right={
-          <StatusBadge
-            status={displayStatus}
-          />
-        }
+        right={<StatusBadge status={displayStatus} />}
       />
 
       <main className="cf-page">
-        {/* Order information */}
+        {/* ========================================
+            1. ORDER DETAILS
+        ======================================== */}
+
         <section>
           <h2 className="text-xl font-bold text-[#172f50]">
             Order Details
@@ -451,22 +363,16 @@ export function ResultPage() {
 
           <p className="mt-1 text-xs text-[#6a7f99]">
             Created{" "}
-            {createdAt.toLocaleDateString(
-              [],
-              {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              },
-            )}
+            {createdAt.toLocaleDateString([], {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })}
             {" • "}
-            {createdAt.toLocaleTimeString(
-              [],
-              {
-                hour: "2-digit",
-                minute: "2-digit",
-              },
-            )}
+            {createdAt.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
           </p>
         </section>
 
@@ -476,27 +382,26 @@ export function ResultPage() {
               type="button"
               onClick={deleteOrder}
               disabled={deleting}
-              className="flex w-full items-center justify-center gap-2 rounded-x1 border-[#d99894] bg-white px-4 py-3 text-sm font-semibold text-[#b64641] transition-colors hover:bg-[#fff1f0] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <Trash2 className="h-4 w-4" />
-                {deleting
-                  ? "Deleting order..."
-                  : "Delete Order"}
-              </button>
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#d99894] bg-white px-4 py-3 text-sm font-semibold text-[#b64641] transition-colors hover:bg-[#fff1f0] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Trash2 className="h-4 w-4" />
+              {deleting
+                ? "Deleting order..."
+                : "Delete Order"}
+            </button>
           </section>
         )}
 
-        {/* Order summary */}
-        <section className="mt-5 grid grid-cols-3 gap-3">
+        {/* Order summary cards */}
+
+        <section className="mt-5 grid grid-cols-3 gap-2 sm:gap-3">
           <Card className="p-4">
             <p className="text-xs text-[#6a7f99]">
               Items
             </p>
-
             <p className="mt-3 text-3xl font-bold text-[#172f50]">
               {realOrder.items.length}
             </p>
-
             <p className="mt-2 text-xs text-[#6a7f99]">
               Total
             </p>
@@ -506,11 +411,9 @@ export function ResultPage() {
             <p className="text-xs text-[#6a7f99]">
               Box types
             </p>
-
             <p className="mt-3 text-3xl font-bold text-[#172f50]">
               {realOrder.box_types.length}
             </p>
-
             <p className="mt-2 text-xs text-[#6a7f99]">
               Selected
             </p>
@@ -520,223 +423,20 @@ export function ResultPage() {
             <p className="text-xs text-[#6a7f99]">
               Weight
             </p>
-
             <p className="mt-3 text-2xl font-bold text-[#172f50]">
               {totalWeight.toFixed(1)}
             </p>
-
             <p className="mt-2 text-xs text-[#6a7f99]">
               kg
             </p>
           </Card>
         </section>
 
-        {/* Items */}
-        <section className="mt-8">
-          <h2 className="font-mono text-xs uppercase tracking-[0.2em] text-[#7187a0]">
-            Items
-          </h2>
+        {/* ========================================
+            2. PACKING RESULT
+        ======================================== */}
 
-          <div className="mt-4 space-y-3">
-            {realOrder.items.length === 0 ? (
-              <Card className="p-5 text-center">
-                <Package className="mx-auto h-7 w-7 text-[#6a7f99]" />
-
-                <p className="mt-2 text-sm text-[#6a7f99]">
-                  No items added to this order.
-                </p>
-              </Card>
-            ) : (
-              realOrder.items.map(
-                (item, index) => (
-                  <Card
-                    key={`${item.ItemCode}-${index}`}
-                    className="p-4"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#e7f3ff] text-[#2582ce]">
-                        <Package className="h-5 w-5" />
-                      </div>
-
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <h3 className="font-semibold text-[#172f50]">
-                              {
-                                item.ItemReference
-                              }
-                            </h3>
-
-                            <p className="mt-1 font-mono text-xs text-[#6a7f99]">
-                              {
-                                item.ItemCode
-                              }
-                            </p>
-                          </div>
-
-                          <span className="text-xs text-[#71849a]">
-                            {
-                              item.Weight
-                            }{" "}
-                            kg
-                          </span>
-                        </div>
-
-                        <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
-                          <div>
-                            <p className="text-[#70839c]">
-                              Width
-                            </p>
-                            <p className="mt-1 text-[#283f5b]">
-                              {
-                                item.Width
-                              }
-                            </p>
-                          </div>
-
-                          <div>
-                            <p className="text-[#70839c]">
-                              Length
-                            </p>
-                            <p className="mt-1 text-[#283f5b]">
-                              {
-                                item.Length
-                              }
-                            </p>
-                          </div>
-
-                          <div>
-                            <p className="text-[#70839c]">
-                              Depth
-                            </p>
-                            <p className="mt-1 text-[#283f5b]">
-                              {
-                                item.Depth
-                              }
-                            </p>
-                          </div>
-                        </div>
-
-                        {item.BoxGroup && (
-                          <p className="mt-3 text-xs text-[#6a7f99]">
-                            Box group:{" "}
-                            <span className="text-[#506782]">
-                              {
-                                item.BoxGroup
-                              }
-                            </span>
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </Card>
-                ),
-              )
-            )}
-          </div>
-        </section>
-
-        {/* Selected box types */}
-        <section className="mt-8">
-          <h2 className="font-mono text-xs uppercase tracking-[0.2em] text-[#7187a0]">
-            Selected Box Types
-          </h2>
-
-          <div className="mt-4 space-y-3">
-            {realOrder.box_types.length === 0 ? (
-              <Card className="p-5 text-center">
-                <Box className="mx-auto h-7 w-7 text-[#6a7f99]" />
-
-                <p className="mt-2 text-sm text-[#6a7f99]">
-                  No box types selected.
-                </p>
-              </Card>
-            ) : (
-              realOrder.box_types.map(
-                (reference) => (
-                  <Card
-                    key={reference}
-                    className="p-4"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="grid h-11 w-11 place-items-center rounded-xl bg-[#e7f3ff] text-[#2582ce]">
-                        <Box className="h-5 w-5" />
-                      </div>
-
-                      <div>
-                        <p className="text-xs text-[#6a7f99]">
-                          Box reference
-                        </p>
-
-                        <p className="mt-1 font-semibold text-[#172f50]">
-                          {reference}
-                        </p>
-                      </div>
-                    </div>
-                  </Card>
-                ),
-              )
-            )}
-          </div>
-        </section>
-
-        {/* Supervisor-only Validation / optimisation */}
-        {role === "supervisor" &&
-          realOrder.status.toLowerCase() !==
-          "completed" && (
-          <Card className="mt-7 p-5">
-            <p className="text-sm font-semibold text-[#172f50]">
-              Packing result not available yet
-            </p>
-
-            <p className="mt-2 text-xs leading-relaxed text-[#6a7f99]">
-              This order is currently{" "}
-              <span className="font-semibold text-[#506782]">
-                {displayStatus}
-              </span>
-              .
-            </p>
-
-            {realOrder.status.toLowerCase() !==
-              "validated" && (
-              <button
-                type="button"
-                onClick={validateOrder}
-                disabled={validating}
-                className="mt-4 w-full rounded-xl bg-[#2686d5] px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
-              >
-                {validating
-                  ? "Validating..."
-                  : "Validate Order"}
-              </button>
-            )}
-
-            {realOrder.status.toLowerCase() ===
-              "validated" && (
-              <>
-                <div className="mt-4 rounded-xl border border-[#c8e9d7] bg-[#eaf9f0] px-4 py-3 text-sm text-[#137452]">
-                  Order successfully validated
-                  and ready for optimisation.
-                </div>
-
-                <button
-                  type="button"
-                  onClick={optimiseOrder}
-                  disabled={optimising}
-                  className="mt-3 w-full rounded-xl bg-[#2686d5] px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
-                >
-                  {optimising
-                    ? "Running optimisation..."
-                    : "Run Optimisation"}
-                </button>
-              </>
-            )}
-          </Card>
-        )}
-
-        {/* Real packing result summary */}
-        {realOrder.status.toLowerCase() ===
-          "completed" &&
+        {realOrder.status.toLowerCase() === "completed" &&
           packingResult && (
             <>
               <section className="mt-8">
@@ -744,21 +444,17 @@ export function ResultPage() {
                   Packing Result
                 </h2>
 
-                <section className="mt-4 grid grid-cols-3 gap-3">
+                <section className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
                   <Card className="p-4">
                     <p className="text-xs text-[#6a7f99]">
                       Packed
                     </p>
-
                     <p className="mt-3 text-3xl font-bold text-[#15845f]">
                       {
-                        packingResult
-                          .result_data
-                          .Summary
+                        packingResult.result_data.Summary
                           .PackedItemCount
                       }
                     </p>
-
                     <p className="mt-2 text-xs text-[#6a7f99]">
                       items
                     </p>
@@ -768,16 +464,12 @@ export function ResultPage() {
                     <p className="text-xs text-[#6a7f99]">
                       Boxes
                     </p>
-
                     <p className="mt-3 text-3xl font-bold text-[#172f50]">
                       {
-                        packingResult
-                          .result_data
-                          .Summary
+                        packingResult.result_data.Summary
                           .BoxCount
                       }
                     </p>
-
                     <p className="mt-2 text-xs text-[#6a7f99]">
                       used
                     </p>
@@ -787,16 +479,12 @@ export function ResultPage() {
                     <p className="text-xs text-[#6a7f99]">
                       Unpacked
                     </p>
-
                     <p className="mt-3 text-3xl font-bold text-[#172f50]">
                       {
-                        packingResult
-                          .result_data
-                          .Summary
+                        packingResult.result_data.Summary
                           .UnpackedItemCount
                       }
                     </p>
-
                     <p className="mt-2 text-xs text-[#6a7f99]">
                       items
                     </p>
@@ -804,12 +492,11 @@ export function ResultPage() {
                 </section>
 
                 <Card className="mt-4 p-5">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <p className="text-xs text-[#6a7f99]">
                         Packed weight
                       </p>
-
                       <p className="mt-2 text-xl font-bold text-[#172f50]">
                         {packingResult.result_data.Summary.TotalWeight.toFixed(
                           2,
@@ -818,18 +505,14 @@ export function ResultPage() {
                       </p>
                     </div>
 
-                    <div className="text-right">
+                    <div className="sm:text-right">
                       <p className="text-xs text-[#6a7f99]">
                         Overall utilisation
                       </p>
-
                       <p className="mt-2 text-xl font-bold text-[#236eaf]">
                         {(
-                          packingResult
-                            .result_data
-                            .Summary
-                            .OverallVolumeUtilisation *
-                          100
+                          packingResult.result_data.Summary
+                            .OverallVolumeUtilisation * 100
                         ).toFixed(1)}
                         %
                       </p>
@@ -838,25 +521,27 @@ export function ResultPage() {
                 </Card>
               </section>
 
-              {/* Real packing plan */}
+              {/* ========================================
+                  3. PACKING PLAN
+                  Existing visualiser links unchanged
+              ======================================== */}
+
               <section className="mt-8">
                 <h2 className="font-mono text-xs uppercase tracking-[0.2em] text-[#7187a0]">
                   Packing Plan
                 </h2>
 
                 <div className="mt-4 space-y-4 cf-result-cartons">
-                  {packingResult.result_data.Boxes.map(
-                    (box) => {
-                      const utilisationPercent =
-                        box.VolumeUtilisation *
-                        100;
+                  {packingResult.result_data.Boxes.map((box) => {
+                    const utilisationPercent =
+                      box.VolumeUtilisation * 100;
 
-                      return (
-                        <Link
-                          key={box.BoxIndex}
-                          to={`/orders/${realOrder.order_id}/boxes/${boxSlug(box.BoxIndex)}`}
-                          className="block"
-                        >
+                    return (
+                      <Link
+                        key={box.BoxIndex}
+                        to={`/orders/${realOrder.order_id}/boxes/${boxSlug(box.BoxIndex)}`}
+                        className="block"
+                      >
                         <Card className="p-4 transition-colors hover:border-[#86bde8]">
                           <div className="flex items-start gap-3">
                             <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#e7f3ff] text-[#2582ce]">
@@ -867,65 +552,48 @@ export function ResultPage() {
                               <div className="flex items-start justify-between gap-3">
                                 <div>
                                   <h3 className="font-semibold text-[#172f50]">
-                                    Box{" "}
-                                    {box.BoxIndex +
-                                      1}
+                                    Box {box.BoxIndex + 1}
                                   </h3>
 
                                   <p className="mt-1 text-xs text-[#236eaf]">
-                                    {
-                                      box.Reference
-                                    }
+                                    {box.Reference}
                                   </p>
 
                                   {box.BoxGroup && (
                                     <p className="mt-1 text-xs text-[#6a7f99]">
-                                      Group:{" "}
-                                      {
-                                        box.BoxGroup
-                                      }
+                                      Group: {box.BoxGroup}
                                     </p>
                                   )}
                                 </div>
 
                                 <span className="rounded-full bg-[#eaf9f0] px-3 py-1 text-xs font-semibold text-[#137452]">
-                                  {
-                                    box.ItemCount
-                                  }{" "}
-                                  {box.ItemCount ===
-                                  1
+                                  {box.ItemCount}{" "}
+                                  {box.ItemCount === 1
                                     ? "item"
                                     : "items"}
                                 </span>
                               </div>
 
-                              <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
+                              <div className="mt-4 grid grid-cols-1 gap-3 text-xs sm:grid-cols-2">
                                 <div>
                                   <p className="text-[#70839c]">
                                     Weight
                                   </p>
-
-                                    <p className="mt-1 text-[#283f5b]">
-                                      {box.TotalWeight.toFixed(
-                                        2,
-                                      )}{" "}
-                                      kg /{" "}
-                                      {box.MaxWeight != null
-                                        ? `${box.MaxWeight.toFixed(2)} kg`
-                                        : "no limit"}
-                                    </p>
+                                  <p className="mt-1 text-[#283f5b]">
+                                    {box.TotalWeight.toFixed(2)} kg
+                                    {" / "}
+                                    {box.MaxWeight != null
+                                      ? `${box.MaxWeight.toFixed(2)} kg`
+                                      : "no limit"}
+                                  </p>
                                 </div>
 
                                 <div>
                                   <p className="text-[#70839c]">
                                     Utilisation
                                   </p>
-
                                   <p className="mt-1 text-[#283f5b]">
-                                    {utilisationPercent.toFixed(
-                                      1,
-                                    )}
-                                    %
+                                    {utilisationPercent.toFixed(1)}%
                                   </p>
                                 </div>
                               </div>
@@ -935,13 +603,8 @@ export function ResultPage() {
                                   <p className="text-[#70839c]">
                                     Width
                                   </p>
-
                                   <p className="mt-1 text-[#283f5b]">
-                                    {
-                                      box
-                                        .Dimensions
-                                        .Width
-                                    }
+                                    {box.Dimensions.Width}
                                   </p>
                                 </div>
 
@@ -949,13 +612,8 @@ export function ResultPage() {
                                   <p className="text-[#70839c]">
                                     Length
                                   </p>
-
                                   <p className="mt-1 text-[#283f5b]">
-                                    {
-                                      box
-                                        .Dimensions
-                                        .Length
-                                    }
+                                    {box.Dimensions.Length}
                                   </p>
                                 </div>
 
@@ -963,18 +621,14 @@ export function ResultPage() {
                                   <p className="text-[#70839c]">
                                     Depth
                                   </p>
-
                                   <p className="mt-1 text-[#283f5b]">
-                                    {
-                                      box
-                                        .Dimensions
-                                        .Depth
-                                    }
+                                    {box.Dimensions.Depth}
                                   </p>
                                 </div>
                               </div>
 
                               {/* Utilisation bar */}
+
                               <div className="mt-4">
                                 <div className="h-2 overflow-hidden rounded-full bg-[#e7eef6]">
                                   <div
@@ -990,149 +644,157 @@ export function ResultPage() {
                               </div>
 
                               {/* Packed items */}
+
                               <div className="mt-5">
                                 <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#7187a0]">
                                   Packed Items
                                 </p>
 
                                 <div className="mt-3 space-y-2">
-                                  {box.Items.map(
-                                    (item) => (
-                                      <div
-                                        key={
-                                          item.InstanceId
-                                        }
-                                        className="rounded-xl border border-[#dfe7f1] bg-white p-3"
-                                      >
-                                        <div className="flex items-start justify-between gap-3">
-                                          <div>
-                                            <p className="text-sm font-semibold text-[#172f50]">
-                                              {
-                                                item.ItemReference
-                                              }
-                                            </p>
+                                  {box.Items.map((item) => (
+                                    <div
+                                      key={item.InstanceId}
+                                      className="rounded-xl border border-[#dfe7f1] bg-white p-3"
+                                    >
+                                      <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                          <p className="text-sm font-semibold text-[#172f50]">
+                                            {item.ItemReference}
+                                          </p>
 
-                                            <p className="mt-1 font-mono text-xs text-[#6a7f99]">
-                                              {
-                                                item.ItemCode
-                                              }
-                                            </p>
-                                          </div>
-
-                                          <span className="text-xs text-[#71849a]">
-                                            {
-                                              item.Weight
-                                            }{" "}
-                                            kg
-                                          </span>
+                                          <p className="mt-1 font-mono text-xs text-[#6a7f99]">
+                                            {item.ItemCode}
+                                          </p>
                                         </div>
 
-                                        <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
-                                          <div>
-                                            <p className="text-[#70839c]">
-                                              Position
-                                            </p>
+                                        <span className="text-xs text-[#71849a]">
+                                          {item.Weight} kg
+                                        </span>
+                                      </div>
 
-                                            <p className="mt-1 text-[#283f5b]">
-                                              X{" "}
-                                              {
-                                                item
-                                                  .Position
-                                                  .X
-                                              }
-                                              , Y{" "}
-                                              {
-                                                item
-                                                  .Position
-                                                  .Y
-                                              }
-                                              , Z{" "}
-                                              {
-                                                item
-                                                  .Position
-                                                  .Z
-                                              }
-                                            </p>
-                                          </div>
-
-                                          <div>
-                                            <p className="text-[#70839c]">
-                                              Orientation
-                                            </p>
-
-                                            <p className="mt-1 text-[#283f5b]">
-                                              {
-                                                item
-                                                  .Orientation
-                                                  .Code
-                                              }
-                                            </p>
-                                          </div>
+                                      <div className="mt-3 grid grid-cols-1 gap-3 text-xs sm:grid-cols-2">
+                                        <div>
+                                          <p className="text-[#70839c]">
+                                            Position
+                                          </p>
+                                          <p className="mt-1 text-[#283f5b]">
+                                            X {item.Position.X}, Y{" "}
+                                            {item.Position.Y}, Z{" "}
+                                            {item.Position.Z}
+                                          </p>
                                         </div>
 
-                                        <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
-                                          <div>
-                                            <p className="text-[#70839c]">
-                                              W
-                                            </p>
-
-                                            <p className="mt-1 text-[#283f5b]">
-                                              {
-                                                item
-                                                  .Dimensions
-                                                  .Width
-                                              }
-                                            </p>
-                                          </div>
-
-                                          <div>
-                                            <p className="text-[#70839c]">
-                                              L
-                                            </p>
-
-                                            <p className="mt-1 text-[#283f5b]">
-                                              {
-                                                item
-                                                  .Dimensions
-                                                  .Length
-                                              }
-                                            </p>
-                                          </div>
-
-                                          <div>
-                                            <p className="text-[#70839c]">
-                                              D
-                                            </p>
-
-                                            <p className="mt-1 text-[#283f5b]">
-                                              {
-                                                item
-                                                  .Dimensions
-                                                  .Depth
-                                              }
-                                            </p>
-                                          </div>
+                                        <div>
+                                          <p className="text-[#70839c]">
+                                            Orientation
+                                          </p>
+                                          <p className="mt-1 text-[#283f5b]">
+                                            {item.Orientation.Code}
+                                          </p>
                                         </div>
                                       </div>
-                                    ),
-                                  )}
+
+                                      <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+                                        <div>
+                                          <p className="text-[#70839c]">
+                                            W
+                                          </p>
+                                          <p className="mt-1 text-[#283f5b]">
+                                            {item.Dimensions.Width}
+                                          </p>
+                                        </div>
+
+                                        <div>
+                                          <p className="text-[#70839c]">
+                                            L
+                                          </p>
+                                          <p className="mt-1 text-[#283f5b]">
+                                            {item.Dimensions.Length}
+                                          </p>
+                                        </div>
+
+                                        <div>
+                                          <p className="text-[#70839c]">
+                                            D
+                                          </p>
+                                          <p className="mt-1 text-[#283f5b]">
+                                            {item.Dimensions.Depth}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
                                 </div>
                               </div>
                             </div>
                           </div>
                         </Card>
-                        </Link>
-                      );
-                    },
-                  )}
+                      </Link>
+                    );
+                  })}
                 </div>
               </section>
             </>
           )}
 
+        {/* ========================================
+            VALIDATION AND OPTIMISATION
+            For orders that are not completed
+        ======================================== */}
+
+        {role === "supervisor" &&
+          realOrder.status.toLowerCase() !== "completed" && (
+            <Card className="mt-7 p-5">
+              <p className="text-sm font-semibold text-[#172f50]">
+                Packing result not available yet
+              </p>
+
+              <p className="mt-2 text-xs leading-relaxed text-[#6a7f99]">
+                This order is currently{" "}
+                <span className="font-semibold text-[#506782]">
+                  {displayStatus}
+                </span>
+                .
+              </p>
+
+              {realOrder.status.toLowerCase() !== "validated" && (
+                <button
+                  type="button"
+                  onClick={validateOrder}
+                  disabled={validating}
+                  className="mt-4 w-full rounded-xl bg-[#2686d5] px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
+                >
+                  {validating
+                    ? "Validating..."
+                    : "Validate Order"}
+                </button>
+              )}
+
+              {realOrder.status.toLowerCase() === "validated" && (
+                <>
+                  <div className="mt-4 rounded-xl border border-[#c8e9d7] bg-[#eaf9f0] px-4 py-3 text-sm text-[#137452]">
+                    Order successfully validated and ready
+                    for optimisation.
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={optimiseOrder}
+                    disabled={optimising}
+                    className="mt-3 w-full rounded-xl bg-[#2686d5] px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
+                  >
+                    {optimising
+                      ? "Running optimisation..."
+                      : "Run Optimisation"}
+                  </button>
+                </>
+              )}
+            </Card>
+          )}
+
         {/* Result loading fallback */}
-        {realOrder.status.toLowerCase() ===
-          "completed" &&
+
+        {realOrder.status.toLowerCase() === "completed" &&
           !packingResult && (
             <Card className="mt-7 p-5">
               <p className="text-sm text-[#6a7f99]">
@@ -1140,6 +802,150 @@ export function ResultPage() {
               </p>
             </Card>
           )}
+
+        {/* ========================================
+            4. ITEMS AND SELECTED BOX TYPES
+            Mobile: stacked
+            Desktop: side by side
+        ======================================== */}
+
+        <section className="mt-8 grid grid-cols-1 gap-6 xl:grid-cols-2">
+          {/* Items */}
+
+          <section className="min-w-0">
+            <h2 className="font-mono text-xs uppercase tracking-[0.2em] text-[#7187a0]">
+              Items
+            </h2>
+
+            <div className="mt-4 space-y-3">
+              {realOrder.items.length === 0 ? (
+                <Card className="p-5 text-center">
+                  <Package className="mx-auto h-7 w-7 text-[#6a7f99]" />
+
+                  <p className="mt-2 text-sm text-[#6a7f99]">
+                    No items added to this order.
+                  </p>
+                </Card>
+              ) : (
+                realOrder.items.map((item, index) => (
+                  <Card
+                    key={`${item.ItemCode}-${index}`}
+                    className="p-4"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#e7f3ff] text-[#2582ce]">
+                        <Package className="h-5 w-5" />
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <h3 className="break-words font-semibold text-[#172f50]">
+                              {item.ItemReference}
+                            </h3>
+
+                            <p className="mt-1 break-all font-mono text-xs text-[#6a7f99]">
+                              {item.ItemCode}
+                            </p>
+                          </div>
+
+                          <span className="shrink-0 text-xs text-[#71849a]">
+                            {item.Weight} kg
+                          </span>
+                        </div>
+
+                        <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+                          <div>
+                            <p className="text-[#70839c]">
+                              Width
+                            </p>
+                            <p className="mt-1 text-[#283f5b]">
+                              {item.Width}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-[#70839c]">
+                              Length
+                            </p>
+                            <p className="mt-1 text-[#283f5b]">
+                              {item.Length}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-[#70839c]">
+                              Depth
+                            </p>
+                            <p className="mt-1 text-[#283f5b]">
+                              {item.Depth}
+                            </p>
+                          </div>
+                        </div>
+
+                        {item.BoxGroup && (
+                          <p className="mt-3 text-xs text-[#6a7f99]">
+                            Box group:{" "}
+                            <span className="text-[#506782]">
+                              {item.BoxGroup}
+                            </span>
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                ))
+              )}
+            </div>
+          </section>
+
+          {/* Selected Box Types */}
+
+          <section className="min-w-0">
+            <h2 className="font-mono text-xs uppercase tracking-[0.2em] text-[#7187a0]">
+              Selected Box Types
+            </h2>
+
+            <div className="mt-4 space-y-3">
+              {realOrder.box_types.length === 0 ? (
+                <Card className="p-5 text-center">
+                  <Box className="mx-auto h-7 w-7 text-[#6a7f99]" />
+
+                  <p className="mt-2 text-sm text-[#6a7f99]">
+                    No box types selected.
+                  </p>
+                </Card>
+              ) : (
+                realOrder.box_types.map((reference) => (
+                  <Card
+                    key={reference}
+                    className="p-4"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#e7f3ff] text-[#2582ce]">
+                        <Box className="h-5 w-5" />
+                      </div>
+
+                      <div className="min-w-0">
+                        <p className="text-xs text-[#6a7f99]">
+                          Box reference
+                        </p>
+
+                        <p className="mt-1 break-words font-semibold text-[#172f50]">
+                          {reference}
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+                ))
+              )}
+            </div>
+          </section>
+        </section>
+
+        {/* ========================================
+            5. EXPORT ORDER
+        ======================================== */}
 
         <button
           type="button"
