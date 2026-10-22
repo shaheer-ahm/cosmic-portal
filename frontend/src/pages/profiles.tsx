@@ -150,11 +150,13 @@ export default function ProfileManagementPage() {
 
   return (
     <AppShell>
-      <div className="cf-page">
-        <PageHeader title="Supervisor Dashboard" backTo="/dashboard" />
-        
+      <PageHeader
+        title="Supervisor Dashboard"
+        backTo="/dashboard"
+      />
 
-        <div className="mt-6 rounded-xl border border-[#dce5ee] bg-white p-4 shadow-sm sm:p-6">
+      <main className="cf-page">
+        <div className="rounded-xl border border-[#dce5ee] bg-white p-4 shadow-sm sm:p-6">
           <h2 className="text-xl font-bold text-[#172f50]">
             User Access Management
           </h2>
@@ -262,7 +264,7 @@ export default function ProfileManagementPage() {
             </div>
           )}
         </div>
-      </div>
+      </main>
     </AppShell>
   );
 }
