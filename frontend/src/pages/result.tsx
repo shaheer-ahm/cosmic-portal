@@ -4,7 +4,16 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { boxSlug } from "@comp4050-fiv/visualizer";
 
+import { PackingPlanBox } from "../components/portal/PackingPlanBox";
+
+import { StatMotionCard } from "../components/motion/StatMotionCard";
+
+import { CollapsibleSection } from "../components/portal/CollapsibleSection";
+
+
+
 import { apiFetch } from "../lib/api";
+import { motion, useReducedMotion } from "motion/react";
 import { useAuth } from "../lib/useAuth";
 import { AppShell } from "../components/layout/AppShell";
 import { PageHeader } from "../components/layout/PageHeader";
@@ -126,6 +135,9 @@ export function ResultPage() {
   const [deleting, setDeleting] = useState(false);
   const [validating, setValidating] = useState(false);
   const [optimising, setOptimising] = useState(false);
+  
+  const reduceMotion = useReducedMotion();
+
 
   useEffect(() => {
     if (!orderId) {
@@ -396,9 +408,9 @@ export function ResultPage() {
         {/* Order summary cards */}
 
         <section className="mt-5 grid grid-cols-3 gap-2 sm:gap-3">
-          <Card className="p-4">
+          <StatMotionCard variant="blue">
             <p className="text-xs text-[#6a7f99]">
-              Items
+              Item Types
             </p>
             <p className="mt-3 text-3xl font-bold text-[#172f50]">
               {realOrder.items.length}
@@ -406,11 +418,11 @@ export function ResultPage() {
             <p className="mt-2 text-xs text-[#6a7f99]">
               Total
             </p>
-          </Card>
+          </StatMotionCard>
 
-          <Card className="p-4">
+          <StatMotionCard variant="blue">
             <p className="text-xs text-[#6a7f99]">
-              Box types
+              Allowed Box types
             </p>
             <p className="mt-3 text-3xl font-bold text-[#172f50]">
               {realOrder.box_types.length}
@@ -418,11 +430,11 @@ export function ResultPage() {
             <p className="mt-2 text-xs text-[#6a7f99]">
               Selected
             </p>
-          </Card>
+          </StatMotionCard>
 
-          <Card className="p-4">
+          <StatMotionCard variant="blue">
             <p className="text-xs text-[#6a7f99]">
-              Weight
+              Ordered Item Weight
             </p>
             <p className="mt-3 text-2xl font-bold text-[#172f50]">
               {totalWeight.toFixed(1)}
@@ -430,7 +442,7 @@ export function ResultPage() {
             <p className="mt-2 text-xs text-[#6a7f99]">
               kg
             </p>
-          </Card>
+          </StatMotionCard>
         </section>
 
         {/* ========================================
@@ -446,7 +458,7 @@ export function ResultPage() {
                 </h2>
 
                 <section className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
-                  <Card className="p-4">
+                  <StatMotionCard variant="green">
                     <p className="text-xs text-[#6a7f99]">
                       Packed
                     </p>
@@ -459,9 +471,9 @@ export function ResultPage() {
                     <p className="mt-2 text-xs text-[#6a7f99]">
                       items
                     </p>
-                  </Card>
+                  </StatMotionCard>
 
-                  <Card className="p-4">
+                  <StatMotionCard variant="blue">
                     <p className="text-xs text-[#6a7f99]">
                       Boxes
                     </p>
@@ -474,9 +486,9 @@ export function ResultPage() {
                     <p className="mt-2 text-xs text-[#6a7f99]">
                       used
                     </p>
-                  </Card>
+                  </StatMotionCard>
 
-                  <Card className="p-4">
+                  <StatMotionCard variant="amber">
                     <p className="text-xs text-[#6a7f99]">
                       Unpacked
                     </p>
@@ -489,10 +501,12 @@ export function ResultPage() {
                     <p className="mt-2 text-xs text-[#6a7f99]">
                       items
                     </p>
-                  </Card>
+                  </StatMotionCard>
                 </section>
 
-                <Card className="mt-4 p-5">
+                
+                <StatMotionCard variant="blue" className="mt-4">
+
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <p className="text-xs text-[#6a7f99]">
@@ -519,12 +533,12 @@ export function ResultPage() {
                       </p>
                     </div>
                   </div>
-                </Card>
+                </StatMotionCard>
               </section>
 
               {/* ========================================
                   3. PACKING PLAN
-                  Existing visualiser links unchanged
+                  
               ======================================== */}
 
               <section className="mt-8">
@@ -533,216 +547,16 @@ export function ResultPage() {
                 </h2>
 
                 <div className="mt-4 space-y-4 cf-result-cartons">
-                  {packingResult.result_data.Boxes.map((box) => {
-                    const utilisationPercent =
-                      box.VolumeUtilisation * 100;
-
-                    return (
-                      <Link
-                        key={box.BoxIndex}
-                        to={`/orders/${realOrder.order_id}/boxes/${boxSlug(box.BoxIndex)}`}
-                        aria-label={`View visualisation for Box ${box.BoxIndex + 1}`}
-                        className="group block cursor-pointer rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5282ce]"
-                      >
-
-                        <Card className="p-4 transition-colors hover:border-[#86bde8]">
-                          <div className="flex items-start gap-3">
-                            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#e7f3ff] text-[#2582ce]">
-                              <Box className="h-5 w-5" />
-                            </div>
-
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0">
-                                  <h3 className="font-semibold text-[#172f50]">
-                                    Box {box.BoxIndex + 1}
-                                  </h3>
-
-                                  <p className="mt-1 break-words text-xs text-[#236eaf]">
-                                    {box.Reference}
-                                  </p>
-
-                                  {box.BoxGroup && (
-                                    <p className="mt-1 text-xs text-[#6a7f99]">
-                                      Group: {box.BoxGroup}
-                                    </p>
-                                  )}
-                                </div>
-
-                                <div className="flex shrink-0 flex-col items-end gap-3">
-                                  <span className="rounded-full bg-[#eaf9f0] px-3 py-1 text-xs font-semibold text-[#137452]">
-                                    {box.ItemCount}{" "}
-                                    {box.ItemCount === 1 ? "item" : "items"}
-                                  </span>
-
-                                  {/* View visualisation */}
-                                  <span className="inline-flex min-h-10 items-center justify-center rounded-lg bg-[#5282ce] px-5 py-2 text-sm font-semibold text-white transition-colors group-hover:bg-[#346fbd]">
-                                    View
-                                  </span>
-                                </div>
-                              </div>
-
-
-                              <div className="mt-4 grid grid-cols-1 gap-3 text-xs sm:grid-cols-2">
-                                <div>
-                                  <p className="text-[#70839c]">
-                                    Weight
-                                  </p>
-                                  <p className="mt-1 text-[#283f5b]">
-                                    {box.TotalWeight.toFixed(2)} kg
-                                    {" / "}
-                                    {box.MaxWeight != null
-                                      ? `${box.MaxWeight.toFixed(2)} kg`
-                                      : "no limit"}
-                                  </p>
-                                </div>
-
-                                <div>
-                                  <p className="text-[#70839c]">
-                                    Utilisation
-                                  </p>
-                                  <p className="mt-1 text-[#283f5b]">
-                                    {utilisationPercent.toFixed(1)}%
-                                  </p>
-                                </div>
-                              </div>
-
-                              <div className="mt-3 grid grid-cols-3 gap-3 text-xs">
-                                <div>
-                                  <p className="text-[#70839c]">
-                                    Width
-                                  </p>
-                                  <p className="mt-1 text-[#283f5b]">
-                                    {box.Dimensions.Width}
-                                  </p>
-                                </div>
-
-                                <div>
-                                  <p className="text-[#70839c]">
-                                    Length
-                                  </p>
-                                  <p className="mt-1 text-[#283f5b]">
-                                    {box.Dimensions.Length}
-                                  </p>
-                                </div>
-
-                                <div>
-                                  <p className="text-[#70839c]">
-                                    Depth
-                                  </p>
-                                  <p className="mt-1 text-[#283f5b]">
-                                    {box.Dimensions.Depth}
-                                  </p>
-                                </div>
-                              </div>
-
-                              {/* Utilisation bar */}
-
-                              <div className="mt-4">
-                                <div className="h-2 overflow-hidden rounded-full bg-[#e7eef6]">
-                                  <div
-                                    className="h-full rounded-full bg-[#2686d5]"
-                                    style={{
-                                      width: `${Math.min(
-                                        utilisationPercent,
-                                        100,
-                                      )}%`,
-                                    }}
-                                  />
-                                </div>
-                              </div>
-
-                              {/* Packed items */}
-
-                              <div className="mt-5">
-                                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#7187a0]">
-                                  Packed Items
-                                </p>
-
-                                <div className="mt-3 space-y-2">
-                                  {box.Items.map((item) => (
-                                    <div
-                                      key={item.InstanceId}
-                                      className="rounded-xl border border-[#dfe7f1] bg-white p-3"
-                                    >
-                                      <div className="flex items-start justify-between gap-3">
-                                        <div>
-                                          <p className="text-sm font-semibold text-[#172f50]">
-                                            {item.ItemReference}
-                                          </p>
-
-                                          <p className="mt-1 font-mono text-xs text-[#6a7f99]">
-                                            {item.ItemCode}
-                                          </p>
-                                        </div>
-
-                                        <span className="text-xs text-[#71849a]">
-                                          {item.Weight} kg
-                                        </span>
-                                      </div>
-
-                                      <div className="mt-3 grid grid-cols-1 gap-3 text-xs sm:grid-cols-2">
-                                        <div>
-                                          <p className="text-[#70839c]">
-                                            Position
-                                          </p>
-                                          <p className="mt-1 text-[#283f5b]">
-                                            X {item.Position.X}, Y{" "}
-                                            {item.Position.Y}, Z{" "}
-                                            {item.Position.Z}
-                                          </p>
-                                        </div>
-
-                                        <div>
-                                          <p className="text-[#70839c]">
-                                            Orientation
-                                          </p>
-                                          <p className="mt-1 text-[#283f5b]">
-                                            {item.Orientation.Code}
-                                          </p>
-                                        </div>
-                                      </div>
-
-                                      <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
-                                        <div>
-                                          <p className="text-[#70839c]">
-                                            W
-                                          </p>
-                                          <p className="mt-1 text-[#283f5b]">
-                                            {item.Dimensions.Width}
-                                          </p>
-                                        </div>
-
-                                        <div>
-                                          <p className="text-[#70839c]">
-                                            L
-                                          </p>
-                                          <p className="mt-1 text-[#283f5b]">
-                                            {item.Dimensions.Length}
-                                          </p>
-                                        </div>
-
-                                        <div>
-                                          <p className="text-[#70839c]">
-                                            D
-                                          </p>
-                                          <p className="mt-1 text-[#283f5b]">
-                                            {item.Dimensions.Depth}
-                                          </p>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </Card>
-                      </Link>
-                    );
-                  })}
+                  {packingResult.result_data.Boxes.map((box) => (
+                    <PackingPlanBox
+                      key={box.BoxIndex}
+                      box={box}
+                      visualizerUrl={`/orders/${realOrder.order_id}/boxes/${boxSlug(box.BoxIndex)}`}
+                    />
+                  ))}
                 </div>
               </section>
+
             </>
           )}
 
@@ -819,14 +633,16 @@ export function ResultPage() {
         ======================================== */}
 
         <section className="mt-8 grid grid-cols-1 gap-6 xl:grid-cols-2">
+          
           {/* Items */}
 
-          <section className="min-w-0">
-            <h2 className="font-mono text-xs uppercase tracking-[0.2em] text-[#7187a0]">
-              Items
-            </h2>
+          <CollapsibleSection
+            title="Items"
+            count={realOrder.items.length}
+            countLabel="items"
+            icon={Package}
+          >
 
-            <div className="mt-4 space-y-3">
               {realOrder.items.length === 0 ? (
                 <Card className="p-5 text-center">
                   <Package className="mx-auto h-7 w-7 text-[#6a7f99]" />
@@ -905,17 +721,18 @@ export function ResultPage() {
                   </Card>
                 ))
               )}
-            </div>
-          </section>
+          </CollapsibleSection>
 
           {/* Selected Box Types */}
 
-          <section className="min-w-0">
-            <h2 className="font-mono text-xs uppercase tracking-[0.2em] text-[#7187a0]">
-              Selected Box Types
-            </h2>
+          
+          <CollapsibleSection
+            title="Selected Box Types"
+            count={realOrder.box_types.length}
+            countLabel="selected"
+            icon={Box}
+          >
 
-            <div className="mt-4 space-y-3">
               {realOrder.box_types.length === 0 ? (
                 <Card className="p-5 text-center">
                   <Box className="mx-auto h-7 w-7 text-[#6a7f99]" />
@@ -948,8 +765,7 @@ export function ResultPage() {
                   </Card>
                 ))
               )}
-            </div>
-          </section>
+          </CollapsibleSection>
         </section>
 
         {/* ========================================
