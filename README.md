@@ -15,17 +15,19 @@ The application supports desktop and mobile layouts, with role-based access for 
 
 1. **Authentication:** Register, verify email, log in, log out, and reset passwords through Supabase Authentication.
 
-2. **Dashboard:** View order statistics, statuses, and recent orders.
+2. **Dashboard:** Interactive warehouse operations dashboard featuring live order statistics, workflow distribution, an animated order journey, role-based quick actions, and recent orders. Users can navigate directly to filtered order queues.
 
 3. **Create Orders:** Add items with dimensions, weights, quantities, and packing requirements. Import item data or enter information manually. All active carton types are selected by default and can be adjusted.
 
-4. **Manage Orders:** Search orders, filter by order status.
+4. **Manage Orders:** Search and filter orders by status, view orders created by the signed-in user through the **Your Orders** filter, and delete eligible orders individually or in bulk. Dashboard shortcuts open the Orders Queue with the relevant filters applied.
 
 5. **Validate & Optimise:** Supervisors can validate orders and submit them to FitSolver through the FastAPI backend.
 
 6. **Packing Results:** View packed and unpacked item counts, cartons used, weights, and space utilisation.
 
-7. **Packing Plan & Visualisation:** Review individual carton details and packed items. Click a specific box or its **View** control to open its 2D and 3D visualisation using FitVisualizer.
+
+7. **Packing Plan & Visualisation:** Review carton dimensions, weight, utilisation, and packing arrangements through collapsible box cards. Expand individual cartons to inspect packed-item positions, orientations, and dimensions. Use the dedicated **View** button to open the corresponding FitVisualizer visualisation.
+
 
 8. **Profiles Management:** Supervisors can assign User/Supervisor roles and manage user accounts, including the recently implemented account-deletion feature.
 
@@ -38,6 +40,7 @@ The application supports desktop and mobile layouts, with role-based access for 
 | Component | Technology |
 |---|---|
 | Frontend | React 19, TypeScript, Vite, Tailwind CSS |
+| UI Animations | Motion for React (`motion`) |
 | Backend | Python, FastAPI, SQLAlchemy, Pydantic |
 | Authentication | Supabase Auth |
 | Database | PostgreSQL (Supabase) |

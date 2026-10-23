@@ -1,9 +1,10 @@
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Search, ChevronRight, Package, Box, Filter, Trash2 } from "lucide-react";
 import { useAuth } from "../lib/useAuth";
+import { MotionCard } from "../components/motion/MotionCard";
 
 import { apiFetch } from "../lib/api";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { AppShell } from "../components/layout/AppShell";
 import { PageHeader } from "../components/layout/PageHeader";
@@ -25,11 +26,30 @@ interface OrderSummary {
 
 export function OrdersPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { role, user } = useAuth();
   const [selectedOrderIds, setSelectedOrderIds] = useState<Set<string>>(new Set());
   const [deletingSelected, setDeletingSelected] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("All");
+  const availableFilters = [
+    "All", "Your Orders", "Draft", "Validated", "Completed", "Processing", "Invalid",
+  ];
+  const requestedStatus = searchParams.get("status")?.toLowerCase() ?? "all";
+  const statusFilter = availableFilters.find(
+    (filter) => filter.toLowerCase() === requestedStatus,
+  ) ?? "All";
+
+  const changeStatusFilter = (filter: string) => {
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      if (filter === "All") {
+        next.delete("status");
+      } else {
+        next.set("status", filter.toLowerCase());
+      }
+      return next;
+    });
+  };
   const [orders, setOrders] = useState<OrderSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -93,6 +113,7 @@ export function OrdersPage() {
   }, [reloadKey]);
 
   const filteredOrders = orders.filter((order) => {
+
     // Search by order reference
     const matchesSearch = order.reference
       .toLowerCase()
@@ -255,11 +276,11 @@ export function OrdersPage() {
           {/* Filter Pills */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
             <Filter className="h-3.5 w-3.5 text-[#6a7f99] shrink-0 mr-1" />
-            {["All", "Your Orders", "Draft", "Validated" , "Completed", "Processing", "Invalid"].map((filter) => (
+            {availableFilters.map((filter) => (
               <button
                 key={filter}
                 type="button"
-                onClick={() => setStatusFilter(filter)}
+                onClick={() => changeStatusFilter(filter)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
                   statusFilter === filter
                     ? "bg-[#e7f3ff] text-[#236eaf] border border-[#2686d5]/40"
@@ -358,53 +379,54 @@ export function OrdersPage() {
               </p>
             </Card>
           ) : (
-            filteredOrders.map((order) => (
-              <Card
-                key={order.id}
-                className="p-4 hover:border-[#b4d4ee] transition-colors cursor-pointer group"
-                onClick={() => navigate(`/orders/${order.id}`)}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    {canSelectOrder(order) && (
-                      <input
-                        type="checkbox"
-                        checked={selectedOrderIds.has(order.id)}
-                        onClick={event => event.stopPropagation()}
-                        onChange={() => toggleOrderSelection(order.id)}
-                        disabled={deletingSelected}
-                        aria-label={`Select ${order.reference}`}
-                        className="h-4 w-4 shrink-0 cursor-pointer rounded border-[#b8c8d8] accent-[#2686d5]"
-                      />
-                    )}
+            filteredOrders.map((order,index) => (
+              <MotionCard key={order.id} index={index}>
+                <Card
+                  className="p-4 hover:border-[#b4d4ee] transition-colors cursor-pointer group"
+                  onClick={() => navigate(`/orders/${order.id}`)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {canSelectOrder(order) && (
+                        <input
+                          type="checkbox"
+                          checked={selectedOrderIds.has(order.id)}
+                          onClick={event => event.stopPropagation()}
+                          onChange={() => toggleOrderSelection(order.id)}
+                          disabled={deletingSelected}
+                          aria-label={`Select ${order.reference}`}
+                          className="h-4 w-4 shrink-0 cursor-pointer rounded border-[#b8c8d8] accent-[#2686d5]"
+                        />
+                      )}
 
-                    <h3 className="text-base font-bold text-[#172f50] group-hover:text-[#1f77be] transition-colors">
-                      {order.reference}
-                    </h3>
+                      <h3 className="text-base font-bold text-[#172f50] group-hover:text-[#1f77be] transition-colors">
+                        {order.reference}
+                      </h3>
 
-                    <StatusBadge status={order.status} />
+                      <StatusBadge status={order.status} />
+                    </div>
+
+                    <ChevronRight className="h-5 w-5 text-[#6a7f99] group-hover:text-[#146fae] transition-colors" />
                   </div>
 
-                  <ChevronRight className="h-5 w-5 text-[#6a7f99] group-hover:text-[#146fae] transition-colors" />
-                </div>
+                  <div className="mt-3 flex items-center justify-between text-xs text-[#6a7f99]">
+                    <div className="flex items-center gap-4">
+                      <span className="flex items-center gap-1.5">
+                        <Package className="h-3.5 w-3.5" />
+                        {order.itemsCount} items
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <Box className="h-3.5 w-3.5" />
+                        {order.boxesCount} {order.boxesCount === 1 ? "box" : "boxes"}
+                      </span>
+                    </div>
 
-                <div className="mt-3 flex items-center justify-between text-xs text-[#6a7f99]">
-                  <div className="flex items-center gap-4">
-                    <span className="flex items-center gap-1.5">
-                      <Package className="h-3.5 w-3.5" />
-                      {order.itemsCount} items
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <Box className="h-3.5 w-3.5" />
-                      {order.boxesCount} {order.boxesCount === 1 ? "box" : "boxes"}
+                    <span className="font-mono text-[11px]">
+                      {order.date}, {order.time}
                     </span>
                   </div>
-
-                  <span className="font-mono text-[11px]">
-                    {order.date}, {order.time}
-                  </span>
-                </div>
-              </Card>
+                </Card>
+              </MotionCard>
             ))
           )}
         </section>
