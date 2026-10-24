@@ -17,6 +17,9 @@ import {
 import { AppShell } from "../components/layout/AppShell";
 import { PageHeader } from "../components/layout/PageHeader";
 import { ItemEditor } from "../components/orders/ItemEditor";
+
+import { JsonItemImporter } from "../components/orders/JsonItemImporter";
+
 import { CustomBoxForm } from "../components/orders/CustomBoxForm";
 import { Card } from "../components/ui/Card";
 import { apiFetch } from "../lib/api";
@@ -24,7 +27,7 @@ import { useAuth } from "../lib/useAuth";
 
 import type { BoxType, PackerItem } from "../types/domain";
 
-import { JsonItemImporter } from "../components/orders/JsonItemImporter";
+
 
 const blankItem = (): PackerItem => ({
   ItemCode: "",
@@ -664,16 +667,29 @@ export function NewOrderPage() {
                 Add the items that need to be packed.
               </p>
             </div>
+            
+            <div className="flex shrink-0 items-center gap-2">
+              <JsonItemImporter
+                disabled={submitting}
+                onItemsImported={(importedItems) => {
+                  setItems(importedItems);
+                  setIssues([]);
+                  setSubmitted(false);
+                  setOrderRef("");
+                }}
+              />
 
-            <button
-              type="button"
-              onClick={addItem}
-              disabled={submitting}
-              aria-label="Add item"
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#e7f3ff] text-[#1b75bc] disabled:opacity-50"
-            >
-              <Plus className="h-5 w-5" />
-            </button>
+              <button
+                type="button"
+                onClick={addItem}
+                disabled={submitting}
+                aria-label="Add item"
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#e7f3ff] text-[#1b75bc] disabled:opacity-50"
+              >
+                <Plus className="h-5 w-5" />
+              </button>
+            </div>
+
           </div>
 
           <div className="cf-editor-grid">
