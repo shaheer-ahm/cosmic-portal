@@ -1,4 +1,3 @@
-
 import { useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import { FileJson, Upload, X } from "lucide-react";
@@ -12,15 +11,37 @@ type Props = {
 function parseItems(text: string): PackerItem[] {
   const parsed: unknown = JSON.parse(text);
 
-  if (!Array.isArray(parsed) || parsed.length === 0) {
+  let rawList: unknown[] = [];
+
+  if (Array.isArray(parsed)) {
+    rawList = parsed;
+  } else if (
+    parsed &&
+    typeof parsed === "object" &&
+    "items" in parsed &&
+    Array.isArray((parsed as Record<string, unknown>).items)
+  ) {
+    rawList = (parsed as Record<string, unknown>).items as unknown[];
+  } else if (
+    parsed &&
+    typeof parsed === "object" &&
+    "Items" in parsed &&
+    Array.isArray((parsed as Record<string, unknown>).Items)
+  ) {
+    rawList = (parsed as Record<string, unknown>).Items as unknown[];
+  } else {
     throw new Error(
-      "The JSON must be a non-empty array of items."
+      "The JSON must be an array of items or contain an 'items' array."
     );
+  }
+  if (rawList.length === 0) {
+      throw new Error("The JSON must be a non-empty array of items.");
   }
 
   const seen = new Set<string>();
 
-  return parsed.map(
+
+  return rawList.map(
     (entry: unknown, index: number): PackerItem => {
       if (
         !entry ||
