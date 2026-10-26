@@ -51,6 +51,11 @@ export function CustomBoxForm({
 
   const save = async () => {
     const reference = form.Reference.trim().toUpperCase();
+
+    if (!reference) {
+      setError("A box reference is required.");
+      return;
+    }
     
     if (!reference.startsWith("CUSTOM-")) {
     setError(
@@ -60,11 +65,6 @@ export function CustomBoxForm({
     return;
     }
 
-
-    if (!reference) {
-      setError("A box reference is required.");
-      return;
-    }
 
     const dimensions = [
       form.Width,
@@ -115,6 +115,14 @@ export function CustomBoxForm({
     setError("");
 
     try {
+      // Default fallbacks for unstarred optional fields when left blank:
+      // - MaxWeight: 25 kg (Standard carton limit)
+      // - BoxWeight: 0 kg (Tare weight)
+      // - MaximumBoxes: 100 (Carton usage cap)
+      const maxWeightVal = form.MaxWeight ? Number(form.MaxWeight) : 25;
+      const boxWeightVal = form.BoxWeight ? Number(form.BoxWeight) : 0;
+      const maxBoxesVal = form.MaximumBoxes ? Number(form.MaximumBoxes) : 100;
+
       const created = await apiFetch<BoxType>(
         "/box-types/",
         {
@@ -124,15 +132,9 @@ export function CustomBoxForm({
             Width: dimensions[0],
             Length: dimensions[1],
             Depth: dimensions[2],
-            MaxWeight: form.MaxWeight
-              ? Number(form.MaxWeight)
-              : null,
-            BoxWeight: form.BoxWeight
-              ? Number(form.BoxWeight)
-              : null,
-            MaximumBoxes: form.MaximumBoxes
-              ? Number(form.MaximumBoxes)
-              : null,
+            MaxWeight: maxWeightVal,
+            BoxWeight: boxWeightVal,
+            MaximumBoxes: maxBoxesVal,
           }),
         }
       );
