@@ -1,16 +1,11 @@
-
 import { Box, Download, Package, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { boxSlug } from "@comp4050-fiv/visualizer";
 
 import { PackingPlanBox } from "../components/portal/PackingPlanBox";
-
 import { StatMotionCard } from "../components/motion/StatMotionCard";
-
 import { CollapsibleSection } from "../components/portal/CollapsibleSection";
-
-
 
 import { apiFetch } from "../lib/api";
 import { motion, useReducedMotion } from "motion/react";
@@ -137,7 +132,6 @@ export function ResultPage() {
   const [optimising, setOptimising] = useState(false);
   
   const reduceMotion = useReducedMotion();
-
 
   useEffect(() => {
     if (!orderId) {
@@ -405,7 +399,32 @@ export function ResultPage() {
           </section>
         )}
 
-        {/* Order summary cards */}
+        {/* ========================================
+            2. PACKING PLAN
+        ======================================== */}
+
+        {realOrder.status.toLowerCase() === "completed" &&
+          packingResult && (
+            <section className="mt-8">
+              <h2 className="font-mono text-xs uppercase tracking-[0.2em] text-[#7187a0]">
+                Packing Plan
+              </h2>
+
+              <div className="mt-4 space-y-4 cf-result-cartons">
+                {packingResult.result_data.Boxes.map((box) => (
+                  <PackingPlanBox
+                    key={box.BoxIndex}
+                    box={box}
+                    visualizerUrl={`/orders/${realOrder.order_id}/boxes/${boxSlug(box.BoxIndex)}`}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
+        {/* ========================================
+            3. ORDER SUMMARY CARDS
+        ======================================== */}
 
         <section className="mt-5 grid grid-cols-3 gap-2 sm:gap-3">
           <StatMotionCard variant="blue">
@@ -446,12 +465,12 @@ export function ResultPage() {
         </section>
 
         {/* ========================================
-            2. PACKING RESULT
+            4. PACKING RESULT METRICS       
         ======================================== */}
 
         {realOrder.status.toLowerCase() === "completed" &&
           packingResult && (
-            <>
+            
               <section className="mt-8">
                 <h2 className="font-mono text-xs uppercase tracking-[0.2em] text-[#7187a0]">
                   Packing Result
@@ -536,28 +555,6 @@ export function ResultPage() {
                 </StatMotionCard>
               </section>
 
-              {/* ========================================
-                  3. PACKING PLAN
-                  
-              ======================================== */}
-
-              <section className="mt-8">
-                <h2 className="font-mono text-xs uppercase tracking-[0.2em] text-[#7187a0]">
-                  Packing Plan
-                </h2>
-
-                <div className="mt-4 space-y-4 cf-result-cartons">
-                  {packingResult.result_data.Boxes.map((box) => (
-                    <PackingPlanBox
-                      key={box.BoxIndex}
-                      box={box}
-                      visualizerUrl={`/orders/${realOrder.order_id}/boxes/${boxSlug(box.BoxIndex)}`}
-                    />
-                  ))}
-                </div>
-              </section>
-
-            </>
           )}
 
         {/* ========================================
@@ -627,7 +624,7 @@ export function ResultPage() {
           )}
 
         {/* ========================================
-            4. ITEMS AND SELECTED BOX TYPES
+            5. ITEMS AND SELECTED BOX TYPES
             Mobile: stacked
             Desktop: side by side
         ======================================== */}
@@ -769,7 +766,7 @@ export function ResultPage() {
         </section>
 
         {/* ========================================
-            5. EXPORT ORDER
+            6. EXPORT ORDER
         ======================================== */}
 
         <button
