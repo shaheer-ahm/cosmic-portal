@@ -1,4 +1,4 @@
-import { Box, ChevronRight } from "lucide-react";
+import { Box, ChevronRight, Package } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { StoredOrder } from "../../types/domain";
 import StatusBadge from "../ui/statusBadge";
@@ -12,6 +12,9 @@ export function OrderCard({ order }: OrderCardProps) {
     hour: "2-digit",
     minute: "2-digit",
   });
+
+  const physicalItemCount = order.itemCount ?? 0;
+  const actualBoxesUsed = order.boxCount ?? 0;
 
   return (
     <Link
@@ -30,11 +33,14 @@ export function OrderCard({ order }: OrderCardProps) {
 
           <div className="mt-3 flex flex-wrap items-center gap-4 font-mono text-xs text-[#71849c]">
             <span className="flex items-center gap-1.5">
-              <Box className="h-4 w-4" />
-              {order.itemCount} items
+              <Package className="h-4 w-4 text-[#71849c]" />
+              {physicalItemCount} {physicalItemCount === 1 ? "item" : "items"}
             </span>
 
-            <span>{order.boxCount} boxes</span>
+            <span className="flex items-center gap-1.5">
+              <Box className="h-4 w-4 text-[#71849c]" />
+              {actualBoxesUsed} {actualBoxesUsed === 1 ? "box" : "boxes"}
+            </span>
 
             <span>{time}</span>
           </div>

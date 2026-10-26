@@ -25,12 +25,27 @@ interface DashboardSummary {
   orders_by_status: Record<string, number>;
   recent_orders: RecentOrder[];
 }
+
+interface ItemInput {
+  Quantity?: number;
+}
+
+interface PackingResultData {
+  Summary?: {
+    BoxCount?: number;
+    PackedItemCount?: number;
+  };
+}
+
 interface RecentOrderDetails {
   order_id: number;
   status: string;
   created_at: string;
-  items: unknown[];
+  items: ItemInput[];
   box_types: string[];
+  packingResult?: {
+    result_data?: PackingResultData;
+  };
 }
 interface DashboardOrder {
   id: number;
@@ -73,17 +88,26 @@ export function DashboardPage() {
         const data = await apiFetch<DashboardSummary>("/dashboard/summary");
         if (!active) return;
         setSummary(data);
-        // A failed detail request should not hide the dashboard statistics.
+        // Fetch order details and compute physical items & actual boxes used
         const details = await Promise.allSettled(
           data.recent_orders.map(async (order): Promise<DashboardOrder> => {
             const info = await apiFetch<RecentOrderDetails>(`/orders/${order.order_id}`);
+            // 1. Total physical items (sum of quantities or fallback to length)
+            const physicalItemsCount = info.items
+              ? info.items.reduce((sum, item) => sum + (item.Quantity ?? 1), 0)
+              : 0;
+
+            // 2. Actual physical boxes used from solver summary (fallback to candidate boxes if draft/unpacked)
+            const actualBoxesUsed =
+              info.packingResult?.result_data?.Summary?.BoxCount ??
+              info.box_types.length;
             return {
               id: order.order_id,
               reference: `ORD-${order.order_id}`,
               status: order.status.charAt(0).toUpperCase() + order.status.slice(1),
               createdAt: order.created_at,
-              itemCount: info.items.length,
-              boxCount: info.box_types.length,
+              itemCount: physicalItemsCount,
+              boxCount: actualBoxesUsed,
             };
           }),
         );
@@ -253,7 +277,16 @@ export function DashboardPage() {
                     <ChevronRight className="h-5 w-5 shrink-0 text-[#7187a0]" />
                   </div>
                   <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-[#6a7f99]">
-                    <div className="flex flex-wrap gap-3 sm:gap-4"><span className="inline-flex items-center gap-1"><Package className="h-3.5 w-3.5" />{order.itemCount} {order.itemCount === 1 ? "item type" : "item types"}</span><span className="inline-flex items-center gap-1"><Box className="h-3.5 w-3.5" />{order.boxCount} allowed boxes</span></div>
+                    <div className="flex flex-wrap gap-3 sm:gap-4">
+                      <span className="inline-flex items-center gap-1">
+                        <Package className="h-3.5 w-3.5" />
+                        {order.itemCount} {order.itemCount === 1 ? "item" : "items"}
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <Box className="h-3.5 w-3.5" />
+                        {order.boxCount} {order.boxCount === 1 ? "box" : "boxes"}
+                      </span>
+                    </div>
                     <span className="font-mono text-[11px]">{new Date(order.createdAt).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
                   </div>
                 </Card>
