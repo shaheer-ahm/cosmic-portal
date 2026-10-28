@@ -50,64 +50,100 @@ export function CustomBoxForm({
   };
 
   const save = async () => {
+    if (saving) return;
+
     const reference = form.Reference.trim().toUpperCase();
 
+    // Preserve existing reference validation.
     if (!reference) {
       setError("A box reference is required.");
       return;
     }
-    
+
     if (!reference.startsWith("CUSTOM-")) {
-    setError(
+      setError(
         "Custom box references must start with CUSTOM-. " +
-        "For example: CUSTOM-001."
+          "For example: CUSTOM-001."
+      );
+      return;
+    }
+
+    // Required dimensions: 1–2000 mm.
+    const dimensionFields = [
+      { name: "Width", value: form.Width },
+      { name: "Length", value: form.Length },
+      { name: "Depth", value: form.Depth },
+    ];
+
+    for (const field of dimensionFields) {
+      const number = Number(field.value);
+
+      if (
+        !field.value.trim() ||
+        !Number.isFinite(number) ||
+        number < 1 ||
+        number > 2000
+      ) {
+        setError(
+          `${field.name} must be between 1 and 2000 mm.`
+        );
+        return;
+      }
+    }
+
+    const dimensions = dimensionFields.map((field) =>
+      Number(field.value)
     );
-    return;
-    }
 
+    // Optional fields remain null when blank.
+    const optionalNumber = (
+      value: string
+    ): number | null => {
+      return value.trim() === ""
+        ? null
+        : Number(value);
+    };
 
-    const dimensions = [
-      form.Width,
-      form.Length,
-      form.Depth,
-    ].map(Number);
+    const maxWeightVal = optionalNumber(form.MaxWeight);
+    const boxWeightVal = optionalNumber(form.BoxWeight);
+    const maxBoxesVal = optionalNumber(form.MaximumBoxes);
 
+    // Optional maximum weight: 0.1–100 kg.
     if (
-      [form.Width, form.Length, form.Depth].some(
-        (value) => !value.trim()
-      ) ||
-      dimensions.some(
-        (value) => !Number.isFinite(value) || value <= 0
-      )
+      maxWeightVal !== null &&
+      (!Number.isFinite(maxWeightVal) ||
+        maxWeightVal < 0.1 ||
+        maxWeightVal > 100)
     ) {
-      setError("Enter valid positive dimensions.");
+      setError(
+        "Maximum weight must be between 0.1 and 100 kg."
+      );
       return;
     }
 
+    // Optional box weight: 0–30 kg.
     if (
-      form.MaxWeight !== "" &&
-      (!Number.isFinite(Number(form.MaxWeight)) ||
-        Number(form.MaxWeight) <= 0)
+      boxWeightVal !== null &&
+      (!Number.isFinite(boxWeightVal) ||
+        boxWeightVal < 0 ||
+        boxWeightVal > 30)
     ) {
-      setError("Maximum weight must be positive.");
+      setError(
+        "Box weight must be between 0 and 30 kg."
+      );
       return;
     }
 
+    // Optional carton quantity: integer 1–1000.
     if (
-      form.BoxWeight !== "" &&
-      (!Number.isFinite(Number(form.BoxWeight)) ||
-        Number(form.BoxWeight) < 0)
+      maxBoxesVal !== null &&
+      (!Number.isInteger(maxBoxesVal) ||
+        maxBoxesVal < 1 ||
+        maxBoxesVal > 1000)
     ) {
-      setError("Box weight cannot be negative.");
-      return;
-    }
-
-    if (
-      form.MaximumBoxes !== "" &&
-      (!Number.isInteger(Number(form.MaximumBoxes)) ||
-        Number(form.MaximumBoxes) < 1)
-    ) {
-      setError("Maximum boxes must be a positive whole number.");
+      setError(
+        "Maximum boxes must be a whole number from 1 to 1000."
+      );
       return;
     }
 
@@ -115,14 +151,6 @@ export function CustomBoxForm({
     setError("");
 
     try {
-      // Default fallbacks for unstarred optional fields when left blank:
-      // - MaxWeight: 25 kg (Standard carton limit)
-      // - BoxWeight: 0 kg (Tare weight)
-      // - MaximumBoxes: 100 (Carton usage cap)
-      const maxWeightVal = form.MaxWeight ? Number(form.MaxWeight) : 25;
-      const boxWeightVal = form.BoxWeight ? Number(form.BoxWeight) : 0;
-      const maxBoxesVal = form.MaximumBoxes ? Number(form.MaximumBoxes) : 100;
-
       const created = await apiFetch<BoxType>(
         "/box-types/",
         {
@@ -140,7 +168,7 @@ export function CustomBoxForm({
       );
 
       onCreated(created);
-      setForm(initialForm);
+      setForm({ ...initialForm });
     } catch (err) {
       setError(
         err instanceof Error
@@ -193,6 +221,9 @@ export function CustomBoxForm({
           value={form.Width}
           onChange={(v) => update("Width", v)}
           numeric
+          min={1}
+          max={2000}
+          placeholder="1–2000"
           required
         />
 
@@ -201,6 +232,9 @@ export function CustomBoxForm({
           value={form.Length}
           onChange={(v) => update("Length", v)}
           numeric
+          min={1}
+          max={2000}
+          placeholder="1–2000"
           required
         />
 
@@ -209,6 +243,9 @@ export function CustomBoxForm({
           value={form.Depth}
           onChange={(v) => update("Depth", v)}
           numeric
+          min={1}
+          max={2000}
+          placeholder="1–2000"
           required
         />
 
@@ -217,6 +254,9 @@ export function CustomBoxForm({
           value={form.MaxWeight}
           onChange={(v) => update("MaxWeight", v)}
           numeric
+          min={0.1}
+          max={100}
+          placeholder="Optional: 0.1–100"
         />
 
         <Input
@@ -224,6 +264,9 @@ export function CustomBoxForm({
           value={form.BoxWeight}
           onChange={(v) => update("BoxWeight", v)}
           numeric
+          min={0}
+          max={30}
+          placeholder="Optional: 0–30"
         />
 
         <Input
@@ -232,11 +275,17 @@ export function CustomBoxForm({
           onChange={(v) => update("MaximumBoxes", v)}
           numeric
           integer
+          min={1}
+          max={1000}
+          placeholder="Optional: 1–1000"
         />
       </div>
 
       {error && (
-        <p role="alert" className="mt-4 text-sm text-[#b64641]">
+        <p
+          role="alert"
+          className="mt-4 text-sm text-[#b64641]"
+        >
           {error}
         </p>
       )}
@@ -272,6 +321,8 @@ function Input({
   numeric = false,
   integer = false,
   required = false,
+  min,
+  max,
 }: {
   label: string;
   value: string;
@@ -280,6 +331,8 @@ function Input({
   numeric?: boolean;
   integer?: boolean;
   required?: boolean;
+  min?: number;
+  max?: number;
 }) {
   return (
     <label className="flex flex-col gap-1.5">
@@ -290,7 +343,8 @@ function Input({
 
       <input
         type={numeric ? "number" : "text"}
-        min={numeric ? (label.startsWith("Box weight") ? "0" : "0.001") : undefined}
+        min={numeric ? min : undefined}
+        max={numeric ? max : undefined}
         step={numeric ? (integer ? "1" : "any") : undefined}
         value={value}
         onChange={(event) => onChange(event.target.value)}
