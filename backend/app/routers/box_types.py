@@ -1,3 +1,6 @@
+
+import math
+
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -15,7 +18,88 @@ router = APIRouter(
 SYSTEM_CARTONS = frozenset({"SML", "MED", "LRG"})
 
 
-@router.get("/", response_model=list[schemas.BoxTypeOut])
+def validate_custom_box_limits(
+    data: schemas.BoxTypeCreate,
+) -> None:
+    """
+    Validate numeric constraints for custom cartons.
+
+    Dimensions: 1–2000 mm
+    MaxWeight: optional, 0.1–100 kg
+    BoxWeight: optional, 0–30 kg
+    MaximumBoxes: optional, integer 1–1000
+
+    Reference validation remains unchanged.
+    """
+
+    dimensions = {
+        "Width": data.Width,
+        "Length": data.Length,
+        "Depth": data.Depth,
+    }
+
+    for name, value in dimensions.items():
+        if (
+            not math.isfinite(value)
+            or value < 1
+            or value > 2000
+        ):
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"{name} must be between "
+                    "1 and 2000 mm."
+                ),
+            )
+
+    if data.MaxWeight is not None:
+        if (
+            not math.isfinite(data.MaxWeight)
+            or data.MaxWeight < 0.1
+            or data.MaxWeight > 100
+        ):
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    "MaxWeight must be between "
+                    "0.1 and 100 kg."
+                ),
+            )
+
+    if data.BoxWeight is not None:
+        if (
+            not math.isfinite(data.BoxWeight)
+            or data.BoxWeight < 0
+            or data.BoxWeight > 30
+        ):
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    "BoxWeight must be between "
+                    "0 and 30 kg."
+                ),
+            )
+
+    if data.MaximumBoxes is not None:
+        if (
+            isinstance(data.MaximumBoxes, bool)
+            or not isinstance(data.MaximumBoxes, int)
+            or data.MaximumBoxes < 1
+            or data.MaximumBoxes > 1000
+        ):
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    "MaximumBoxes must be a whole "
+                    "number from 1 to 1000."
+                ),
+            )
+
+
+@router.get(
+    "/",
+    response_model=list[schemas.BoxTypeOut],
+)
 def list_box_types(
     db: Session = Depends(get_db),
     user: dict = Depends(get_current_user),
@@ -43,10 +127,15 @@ def create_box_type(
 
     Supervisor only.
 
-    If a previously deactivated custom box uses the same reference,
-    reactivate it with the newly supplied values.
+    If a previously deactivated custom box uses the
+    same reference, reactivate it with the newly
+    supplied values.
     """
 
+    # Validate dimensions, weights and quantity.
+    validate_custom_box_limits(data)
+
+    # Keep existing reference handling unchanged.
     reference = data.Reference.strip().upper()
 
     if not reference:
@@ -59,7 +148,10 @@ def create_box_type(
     if reference in SYSTEM_CARTONS:
         raise HTTPException(
             status_code=409,
-            detail="This reference is reserved for a system carton.",
+            detail=(
+                "This reference is reserved "
+                "for a system carton."
+            ),
         )
 
     existing = (
@@ -69,15 +161,19 @@ def create_box_type(
     )
 
     if existing:
-        # An active box with this reference already exists.
+        # An active box with this reference
+        # already exists.
         if existing.Active:
             raise HTTPException(
                 status_code=409,
-                detail=f"Box type '{reference}' already exists.",
+                detail=(
+                    f"Box type '{reference}' "
+                    "already exists."
+                ),
             )
 
-        # Reactivate a previously deactivated custom carton
-        # using the new values.
+        # Reactivate a previously deactivated
+        # custom carton using the new values.
         existing.Width = data.Width
         existing.Length = data.Length
         existing.Depth = data.Depth
@@ -93,7 +189,10 @@ def create_box_type(
             db.rollback()
             raise HTTPException(
                 status_code=409,
-                detail="A box with this reference already exists.",
+                detail=(
+                    "A box with this reference "
+                    "already exists."
+                ),
             )
 
         return existing
@@ -117,7 +216,10 @@ def create_box_type(
         db.rollback()
         raise HTTPException(
             status_code=409,
-            detail="A box with this reference already exists.",
+            detail=(
+                "A box with this reference "
+                "already exists."
+            ),
         )
 
     return box
@@ -135,8 +237,9 @@ def delete_custom_box_type(
     """
     Soft-delete a custom box type.
 
-    Default system cartons cannot be deleted, and custom cartons
-    cannot be deactivated while unfinished orders still depend on them.
+    Default system cartons cannot be deleted.
+    Custom cartons cannot be deactivated while
+    unfinished orders still depend on them.
     """
 
     reference = reference.strip().upper()
@@ -145,7 +248,10 @@ def delete_custom_box_type(
     if reference in SYSTEM_CARTONS:
         raise HTTPException(
             status_code=403,
-            detail="Default system cartons cannot be deleted.",
+            detail=(
+                "Default system cartons "
+                "cannot be deleted."
+            ),
         )
 
     box = (
@@ -166,13 +272,14 @@ def delete_custom_box_type(
             detail="This carton is already inactive.",
         )
 
-    # Do not deactivate a carton while unfinished orders
-    # still depend on it.
+    # Prevent deactivation while unfinished
+    # orders still depend on this carton.
     in_use = (
         db.query(models.OrderBoxType)
         .join(
             models.Order,
-            models.Order.order_id == models.OrderBoxType.order_id,
+            models.Order.order_id
+            == models.OrderBoxType.order_id,
         )
         .filter(
             models.OrderBoxType.Reference == reference,
@@ -185,14 +292,15 @@ def delete_custom_box_type(
         raise HTTPException(
             status_code=409,
             detail=(
-                "This carton is assigned to an unfinished order. "
-                "It cannot be deactivated until those orders "
+                "This carton is assigned to an "
+                "unfinished order. It cannot be "
+                "deactivated until those orders "
                 "no longer depend on it."
             ),
         )
 
-    # Soft deletion preserves completed orders and their
-    # historical box references.
+    # Soft deletion preserves completed orders
+    # and their historical box references.
     box.Active = False
     db.commit()
 

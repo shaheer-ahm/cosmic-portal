@@ -4,6 +4,7 @@ import {
   Plus,
   Send,
   Sparkles,
+  ChevronDown,
   Trash2,
   RefreshCw,
 } from "lucide-react";
@@ -78,6 +79,11 @@ const sampleItems: PackerItem[] = [
 
 export function NewOrderPage() {
   const { role } = useAuth();
+  
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, []);
+
 
   // Backend RBAC roles are uppercase:
   // USER and SUPERVISOR.
@@ -95,6 +101,7 @@ export function NewOrderPage() {
     string[]
   >([]);
 
+  const [showCartonTypes, setShowCartonTypes] = useState(false);
   const [loadingBoxes, setLoadingBoxes] = useState(true);
   const [boxError, setBoxError] = useState<string | null>(
     null
@@ -748,19 +755,35 @@ export function NewOrderPage() {
           </div>
 
           <Card className="p-5">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-              <p className="text-sm font-bold text-[#172f50]">
-                {boxes.length} active carton{" "}
-                {boxes.length === 1
-                  ? "type"
-                  : "types"}
-              </p>
+            <button
+              type="button"
+              onClick={() => setShowCartonTypes((current) => !current)}
+              aria-expanded={showCartonTypes}
+              aria-controls="carton-types-content"
+              className="flex w-full items-center justify-between gap-3 rounded-xl p-2 text-left transition-colors hover:bg-[#f0f7ff]"
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-[#172f50]">
+                  {boxes.length} active carton{" "}
+                  {boxes.length === 1 ? "type" : "types"}
+                </p>
 
-              <p className="text-xs text-[#71849a]">
-                {selectedBoxRefs.length} selected
-              </p>
-            </div>
+                <p className="mt-1 text-xs text-[#71849a]">
+                  {selectedBoxRefs.length} selected
+                </p>
+              </div>
 
+              <ChevronDown
+                className={`h-5 w-5 shrink-0 text-[#508bd2] transition-transform duration-300 ${
+                  showCartonTypes ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+            <div
+              id="carton-types-content"
+              hidden={!showCartonTypes}
+              className="mt-4"
+            >
             {loadingBoxes ? (
               <p
                 role="status"
@@ -870,6 +893,7 @@ export function NewOrderPage() {
               available to FitSolver for
               this order.
             </p>
+            </div>
 
             {/* Supervisor-only catalogue management */}
 

@@ -148,10 +148,11 @@ export function DashboardPage() {
   const activeStageIcon = activeStage.icon;
   const StageIcon = activeStageIcon;
   const metrics = [
-    { title: "Total Orders", value: summary.total_orders, note: "Explore all orders", to: "/orders", icon: ClipboardList, tint: "blue", valueColor: "#172f50" },
-    { title: "Completed", value: completed, note: `${completionPercent}% of all orders`, to: "/orders?status=completed", icon: CheckCircle2, tint: "green", valueColor: "#39835d" },
-    { title: "Awaiting Validation", value: draft, note: "Draft orders to review", to: "/orders?status=draft", icon: Clock3, tint: "amber", valueColor: "#aa762b" },
+    { title: "Total Orders", value: summary.total_orders, note: "All orders", to: "/orders", icon: ClipboardList, tint: "blue", valueColor: "#172f50" },
+    { title: "Completed", value: completed, note: "Completed orders", to: "/orders?status=completed", icon: CheckCircle2, tint: "green", valueColor: "#39835d" },
+    { title: "Awaiting Validation", value: draft, note: "Draft orders", to: "/orders?status=draft", icon: Clock3, tint: "amber", valueColor: "#aa762b" },
   ] as const;
+
   const distribution = stages.map((stage) => ({ ...stage, value: count(stage.key) }));
 
   return (
@@ -163,24 +164,61 @@ export function DashboardPage() {
         {/* Main metrics */}
         <section>
           <h3 className="mb-4 font-mono text-xs uppercase tracking-[0.16em] text-[#7187a0]">Operations at a glance</h3>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+
             {metrics.map((metric, index) => {
               const Icon = metric.icon;
               const hoverTone = metric.tint === "green" ? "hover:border-[#9acdb1] hover:bg-[#effaf3]" : metric.tint === "amber" ? "hover:border-[#e7c58b] hover:bg-[#fff8ed]" : "hover:border-[#9fc6ed] hover:bg-[#f0f7ff]";
               return (
-                <motion.div key={metric.title} initial={reduceMotion ? false : { opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: reduceMotion ? 0 : index * 0.09, duration: 0.35 }} whileHover={reduceMotion ? undefined : { y: -5 }} whileTap={reduceMotion ? undefined : { scale: 0.96 }} className="group min-w-0">
-                  <Link to={metric.to} className={`block h-full rounded-2xl border border-[#dce5ee] bg-white p-4 shadow-sm transition-[background-color,border-color,box-shadow] hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#508bd2] sm:p-5 ${hoverTone}`}>
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="text-xs font-medium text-[#7187a0] sm:text-sm">{metric.title}</p>
-                      <Icon className="h-5 w-5 shrink-0" style={{ color: metric.valueColor }} />
+                <motion.div
+                  key={metric.title}
+                  initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    delay: reduceMotion ? 0 : index * 0.09,
+                    duration: 0.35,
+                  }}
+                  whileHover={reduceMotion ? undefined : { y: -5 }}
+                  whileTap={reduceMotion ? undefined : { scale: 0.96 }}
+                  className="group min-w-0"
+                >
+                  <Link
+                    to={metric.to}
+                    className={`flex h-full flex-col rounded-2xl border border-[#dce5ee] bg-white p-2.5 shadow-sm transition-[background-color,border-color,box-shadow] hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#508bd2] sm:p-5 ${hoverTone}`}
+                  >
+                    {/* Title and icon */}
+                    <div className="flex min-h-[40px] items-start justify-between gap-1 sm:min-h-[44px] sm:gap-2">
+
+                      <p className="min-w-0 text-[10px] font-medium leading-tight text-[#7187a0] sm:text-sm">
+                        {metric.title}
+                      </p>
+
+                      <Icon
+                        className="h-3.5 w-3.5 shrink-0 sm:h-5 sm:w-5"
+                        style={{ color: metric.valueColor }}
+                      />
                     </div>
-                    <div className="mt-4 text-4xl font-bold tabular-nums sm:text-5xl" style={{ color: metric.valueColor }}><AnimatedNumber value={metric.value} /></div>
-                    <div className="mt-4 flex items-center justify-between gap-2 text-xs text-[#70839c]">
-                      <span>{metric.note}</span>
-                      <ArrowUpRight className="h-4 w-4 shrink-0 transition-transform group-hover:-translate-y-1 group-hover:translate-x-1" />
+
+                    {/* Animated number */}
+                    <div
+                      className="mt-3 text-3xl font-bold tabular-nums sm:mt-4 sm:text-6xl"
+
+                      style={{ color: metric.valueColor }}
+                    >
+                      <AnimatedNumber value={metric.value} />
+                    </div>
+
+                    {/* Mobile and desktop descriptions */}
+                    <div className="mt-auto flex items-end justify-between gap-1 pt-4 text-[#70839c] sm:gap-2">
+                      <span className="min-w-0 text-[9px] leading-tight sm:text-xs">
+                        {metric.note}
+                      </span>
+
+                      <ArrowUpRight className="h-3 w-3 shrink-0 transition-transform group-hover:-translate-y-1 group-hover:translate-x-1 sm:h-4 sm:w-4" />
                     </div>
                   </Link>
                 </motion.div>
+
               );
             })}
           </div>
