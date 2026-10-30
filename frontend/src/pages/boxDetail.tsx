@@ -8,6 +8,7 @@ import {
     type PackResponse,
 } from "@comp4050-fiv/visualizer";
 
+import "@comp4050-fiv/visualizer/style.css"; // loaded only with the 3D page
 import { apiFetch } from "../lib/api";
 import { AppShell } from "../components/layout/AppShell";
 import { Card } from "../components/ui/Card";

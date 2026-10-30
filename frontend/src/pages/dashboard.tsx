@@ -19,6 +19,9 @@ interface RecentOrder {
   order_id: number;
   status: string;
   created_at: string;
+  // Included in the summary by the backend, so no extra request per order.
+  items_count: number;
+  boxes_count: number; // box types allowed (selected) for the order
 }
 interface DashboardSummary {
   total_orders: number;
@@ -26,27 +29,6 @@ interface DashboardSummary {
   recent_orders: RecentOrder[];
 }
 
-interface ItemInput {
-  Quantity?: number;
-}
-
-interface PackingResultData {
-  Summary?: {
-    BoxCount?: number;
-    PackedItemCount?: number;
-  };
-}
-
-interface RecentOrderDetails {
-  order_id: number;
-  status: string;
-  created_at: string;
-  items: ItemInput[];
-  box_types: string[];
-  packingResult?: {
-    result_data?: PackingResultData;
-  };
-}
 interface DashboardOrder {
   id: number;
   reference: string;
@@ -65,7 +47,7 @@ type Stage = {
 };
 
 const stages: Stage[] = [
-  { key: "draft", label: "Awaiting Validation", description: "Draft orders awaiting validation", icon: ClipboardList, color: "#aa762b"},
+  { key: "draft", label: "Awaiting Validation", description: "Draft orders awaiting validation", icon: ClipboardList, color: "#aa762b" },
   { key: "validated", label: "Validated", description: "Validated orders ready for optimisation", icon: ClipboardCheck, color: "#2582CE" },
   { key: "completed", label: "Completed", description: "Packing results ready for inspection", icon: PackageCheck, color: "#518D68" },
 ];
@@ -88,30 +70,18 @@ export function DashboardPage() {
         const data = await apiFetch<DashboardSummary>("/dashboard/summary");
         if (!active) return;
         setSummary(data);
-        // Fetch order details and compute physical items & actual boxes used
-        const details = await Promise.allSettled(
-          data.recent_orders.map(async (order): Promise<DashboardOrder> => {
-            const info = await apiFetch<RecentOrderDetails>(`/orders/${order.order_id}`);
-            // 1. Total physical items (sum of quantities or fallback to length)
-            const physicalItemsCount = info.items
-              ? info.items.reduce((sum, item) => sum + (item.Quantity ?? 1), 0)
-              : 0;
-
-            // 2. Actual physical boxes used from solver summary (fallback to candidate boxes if draft/unpacked)
-            const actualBoxesUsed =
-              info.packingResult?.result_data?.Summary?.BoxCount ??
-              info.box_types.length;
-            return {
-              id: order.order_id,
-              reference: `ORD-${order.order_id}`,
-              status: order.status.charAt(0).toUpperCase() + order.status.slice(1),
-              createdAt: order.created_at,
-              itemCount: physicalItemsCount,
-              boxCount: actualBoxesUsed,
-            };
-          }),
+        // Item and box counts come with the summary (one request instead
+        // of one extra request per recent order).
+        setRecentOrders(
+          data.recent_orders.map((order) => ({
+            id: order.order_id,
+            reference: `ORD-${order.order_id}`,
+            status: order.status.charAt(0).toUpperCase() + order.status.slice(1),
+            createdAt: order.created_at,
+            itemCount: order.items_count ?? 0,
+            boxCount: order.boxes_count ?? 0,
+          })),
         );
-        if (active) setRecentOrders(details.flatMap((result) => result.status === "fulfilled" ? [result.value] : []));
       } catch (err) {
         if (active) setError(err instanceof Error ? err.message : "Failed to load dashboard.");
       } finally {
@@ -258,7 +228,7 @@ export function DashboardPage() {
               const Icon = stage.icon;
               const active = selectedStage === stage.key;
               return (
-                <button type="button" key={stage.key} onClick={() => setSelectedStage(stage.key)} aria-pressed={active}  className={`relative flex min-w-0 flex-col items-center justify-center gap-2 rounded-xl px-1 py-4 text-center transition-colors hover:bg-[#f0f7ff] focus-visible:outline-2 focus-visible:outline-[#508bd2] sm:min-h-[130px] sm:gap-3 sm:p-4 ${active ? "text-[#2678bf]" : "text-[#6a7f99]"}`}>
+                <button type="button" key={stage.key} onClick={() => setSelectedStage(stage.key)} aria-pressed={active} className={`relative flex min-w-0 flex-col items-center justify-center gap-2 rounded-xl px-1 py-4 text-center transition-colors hover:bg-[#f0f7ff] focus-visible:outline-2 focus-visible:outline-[#508bd2] sm:min-h-[130px] sm:gap-3 sm:p-4 ${active ? "text-[#2678bf]" : "text-[#6a7f99]"}`}>
                   {active && <motion.span layoutId="active-journey-stage" className="absolute inset-0 rounded-xl bg-[#eaf3ff]" transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 350, damping: 30 }} />}
                   <span className="relative z-10 grid h-9 w-9 place-items-center rounded-lg bg-white shadow-sm sm:h-12 sm:w-12"><Icon className="h-5 w-5 sm:h-6 sm:w-6" /></span>
                   <span className="relative z-10 text-[11px] font-semibold sm:text-sm">{stage.label}</span>
@@ -279,8 +249,8 @@ export function DashboardPage() {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {[
               { title: "Create New Order", description: "Enter items and allowed cartons", to: "/orders/new", icon: PackagePlus },
-              
-              {title: "View My Orders",description: "Track the orders you created", to: "/orders?status=your%20orders",icon: ClipboardList,},
+
+              { title: "View My Orders", description: "Track the orders you created", to: "/orders?status=your%20orders", icon: ClipboardList, },
 
               { title: "View Packing Results", description: `${completed} completed orders`, to: "/orders?status=completed", icon: PackageCheck },
             ].map((action) => {

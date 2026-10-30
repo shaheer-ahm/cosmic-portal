@@ -1,0 +1,171 @@
+{
+  "label": "before",
+  "apiDelayMs": 200,
+  "runs": 5,
+  "profiles": {
+    "mobile": {
+      "Login": {
+        "ready": 3641.8,
+        "fcp": 3182,
+        "lcp": 3182,
+        "domContentLoaded": 3117.6,
+        "jsKB": 522.5,
+        "cssKB": 13.3,
+        "jsFiles": 1,
+        "apiCalls": 0
+      },
+      "Dashboard": {
+        "ready": 3673.4,
+        "fcp": 3140,
+        "lcp": 3648,
+        "domContentLoaded": 3108.6,
+        "jsKB": 522.5,
+        "cssKB": 13.3,
+        "jsFiles": 1,
+        "apiCalls": 7
+      },
+      "Orders": {
+        "ready": 3638.1,
+        "fcp": 3140,
+        "lcp": 3204,
+        "domContentLoaded": 3111.3,
+        "jsKB": 522.5,
+        "cssKB": 13.3,
+        "jsFiles": 1,
+        "apiCalls": 2
+      },
+      "New order": {
+        "ready": 3632.5,
+        "fcp": 3144,
+        "lcp": 3212,
+        "domContentLoaded": 3107.1,
+        "jsKB": 522.5,
+        "cssKB": 13.3,
+        "jsFiles": 1,
+        "apiCalls": 2
+      },
+      "Order result": {
+        "ready": 3661.4,
+        "fcp": 3148,
+        "lcp": 3652,
+        "domContentLoaded": 3114.4,
+        "jsKB": 522.5,
+        "cssKB": 13.3,
+        "jsFiles": 1,
+        "apiCalls": 3
+      },
+      "Integration": {
+        "ready": 3649.2,
+        "fcp": 3144,
+        "lcp": 3424,
+        "domContentLoaded": 3110.4,
+        "jsKB": 522.5,
+        "cssKB": 13.3,
+        "jsFiles": 1,
+        "apiCalls": 3
+      },
+      "Profiles": {
+        "ready": 3637.2,
+        "fcp": 3140,
+        "lcp": 3400,
+        "domContentLoaded": 3112.5,
+        "jsKB": 522.5,
+        "cssKB": 13.3,
+        "jsFiles": 1,
+        "apiCalls": 2
+      },
+      "3D box view": {
+        "ready": 3631.3,
+        "fcp": 3140,
+        "lcp": 3408,
+        "domContentLoaded": 3104.3,
+        "jsKB": 522.5,
+        "cssKB": 13.3,
+        "jsFiles": 1,
+        "apiCalls": 2
+      }
+    },
+    "desktop": {
+      "Login": {
+        "ready": 854.5,
+        "fcp": 636,
+        "lcp": 636,
+        "domContentLoaded": 586.2,
+        "jsKB": 522.5,
+        "cssKB": 13.3,
+        "jsFiles": 1,
+        "apiCalls": 0
+      },
+      "Dashboard": {
+        "ready": 1351.1,
+        "fcp": 624,
+        "lcp": 1072,
+        "domContentLoaded": 586.1,
+        "jsKB": 522.5,
+        "cssKB": 13.3,
+        "jsFiles": 1,
+        "apiCalls": 7
+      },
+      "Orders": {
+        "ready": 847.3,
+        "fcp": 632,
+        "lcp": 632,
+        "domContentLoaded": 585.7,
+        "jsKB": 522.5,
+        "cssKB": 13.3,
+        "jsFiles": 1,
+        "apiCalls": 2
+      },
+      "New order": {
+        "ready": 847.4,
+        "fcp": 648,
+        "lcp": 648,
+        "domContentLoaded": 588.6,
+        "jsKB": 522.5,
+        "cssKB": 13.3,
+        "jsFiles": 1,
+        "apiCalls": 2
+      },
+      "Order result": {
+        "ready": 1355.9,
+        "fcp": 624,
+        "lcp": 672,
+        "domContentLoaded": 585.9,
+        "jsKB": 522.5,
+        "cssKB": 13.3,
+        "jsFiles": 1,
+        "apiCalls": 3
+      },
+      "Integration": {
+        "ready": 844.8,
+        "fcp": 644,
+        "lcp": 692,
+        "domContentLoaded": 583.4,
+        "jsKB": 522.5,
+        "cssKB": 13.3,
+        "jsFiles": 1,
+        "apiCalls": 3
+      },
+      "Profiles": {
+        "ready": 847,
+        "fcp": 612,
+        "lcp": 852,
+        "domContentLoaded": 586.7,
+        "jsKB": 522.5,
+        "cssKB": 13.3,
+        "jsFiles": 1,
+        "apiCalls": 2
+      },
+      "3D box view": {
+        "ready": 845.9,
+        "fcp": 624,
+        "lcp": 832,
+        "domContentLoaded": 586.7,
+        "jsKB": 522.5,
+        "cssKB": 13.3,
+        "jsFiles": 1,
+        "apiCalls": 2
+      }
+    }
+  }
+}

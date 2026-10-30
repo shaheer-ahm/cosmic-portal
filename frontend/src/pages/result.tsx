@@ -1,7 +1,7 @@
 import { Box, Download, Package, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { boxSlug } from "@comp4050-fiv/visualizer";
+const boxSlug = (boxIndex: number) => `box-${boxIndex + 1}`;
 
 import { PackingPlanBox } from "../components/portal/PackingPlanBox";
 import { StatMotionCard } from "../components/motion/StatMotionCard";
@@ -103,11 +103,19 @@ interface PackingSummary {
   OverallVolumeUtilisation: number;
 }
 
+interface UnpackedItem {
+  InstanceId: string;
+  ItemCode: string;
+  ItemReference?: string | null;
+  ReasonCode: string;
+  Reason: string;
+}
+
 interface PackingResultData {
   Success: boolean;
   Summary: PackingSummary;
   Boxes: PackedBox[];
-  UnpackedItems: unknown[];
+  UnpackedItems?: UnpackedItem[];
 }
 
 interface PackingResultResponse {
@@ -130,6 +138,7 @@ export function ResultPage() {
   const [deleting, setDeleting] = useState(false);
   const [validating, setValidating] = useState(false);
   const [optimising, setOptimising] = useState(false);
+  const [resultError, setResultError] = useState("");
   
   const reduceMotion = useReducedMotion();
 
@@ -145,17 +154,32 @@ export function ResultPage() {
         setLoading(true);
         setError("");
 
+        const resultRequest = apiFetch<PackingResultResponse>(
+          `/orders/${orderId}/results`,
+        );
+        resultRequest.catch(() => {
+        });
+
         const data = await apiFetch<OrderDetails>(
           `/orders/${orderId}`,
         );
 
         setRealOrder(data);
+        setResultError("");
 
         if (data.status.toLowerCase() === "completed") {
-          const result = await apiFetch<PackingResultResponse>(
-            `/orders/${data.order_id}/results`,
-          );
-          setPackingResult(result);
+          try {
+            const result = await resultRequest;
+            setPackingResult(result);
+          } catch (resultErr) {
+            console.error("Failed to load packing result:", resultErr);
+            setPackingResult(null);
+            setResultError(
+              resultErr instanceof Error
+                ? resultErr.message
+                : "Failed to load the packing result.",
+            );
+          }
         } else {
           setPackingResult(null);
         }
@@ -553,6 +577,27 @@ export function ResultPage() {
                     </div>
                   </div>
                 </StatMotionCard>
+
+                {(packingResult.result_data.UnpackedItems?.length ?? 0) > 0 && (
+                  <Card className="mt-4 border border-[#f0d9b5] p-5">
+                    <p className="text-sm font-semibold text-[#8a5a17]">
+                      Items that could not be packed
+                    </p>
+                    <ul className="mt-3 space-y-2">
+                      {packingResult.result_data.UnpackedItems!.map((item) => (
+                        <li
+                          key={item.InstanceId}
+                          className="rounded-lg bg-[#fff8ee] px-3 py-2 text-xs text-[#5c4a2e]"
+                        >
+                          <span className="font-semibold">{item.ItemCode}</span>
+                          {item.ItemReference ? ` (${item.ItemReference})` : ""}
+                          {": "}
+                          {item.Reason || item.ReasonCode}
+                        </li>
+                      ))}
+                    </ul>
+                  </Card>
+                )}
               </section>
 
           )}
@@ -617,9 +662,15 @@ export function ResultPage() {
         {realOrder.status.toLowerCase() === "completed" &&
           !packingResult && (
             <Card className="mt-7 p-5">
-              <p className="text-sm text-[#6a7f99]">
-                Loading packing result...
-              </p>
+              {resultError ? (
+                <p className="text-sm text-[#b64641]">
+                  Couldn't load the packing result: {resultError}
+                </p>
+              ) : (
+                <p className="text-sm text-[#6a7f99]">
+                  Loading packing result...
+                </p>
+              )}
             </Card>
           )}
 
