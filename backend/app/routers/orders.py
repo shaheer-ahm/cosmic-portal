@@ -234,11 +234,22 @@ def validate_order(order_id: int, db: Session = Depends(get_db), user: dict = De
             .all()
         )
         for item in items:
-            if not any(_item_fits_box(item, box) for box in box_types):
+            boxes_it_fits = [box for box in box_types if _item_fits_box(item, box)]
+            if not boxes_it_fits:
                 issues.append(
                     schemas.ValidationIssue(
                         field=item.ItemCode,
                         message=f"Item '{item.ItemCode}' does not fit in any selected box type",
+                    )
+                )
+            elif not any(_box_can_hold_weight(item, box) for box in boxes_it_fits):
+                issues.append(
+                    schemas.ValidationIssue(
+                        field=item.ItemCode,
+                        message=(
+                            f"Item '{item.ItemCode}' ({item.Weight:g} kg) is heavier than "
+                            "any selected box it fits in can hold"
+                        ),
                     )
                 )
 
@@ -257,6 +268,9 @@ def _item_fits_box(item: "models.OrderItem", box: "models.BoxType") -> bool:
     box_dims = sorted([box.Width, box.Length, box.Depth])
     return all(i <= b for i, b in zip(item_dims, box_dims))
 
+def _box_can_hold_weight(item: "models.OrderItem", box: "models.BoxType") -> bool:
+    """True if one unit of the item is within the box's MaxWeight (no limit if unset)."""
+    return box.MaxWeight is None or item.Weight <= box.MaxWeight
 
 # Status
 

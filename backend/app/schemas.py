@@ -1,3 +1,5 @@
+import re
+
 from typing import Optional, Literal
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -112,6 +114,16 @@ class BoxTypeCreate(BaseModel):
     MaxWeight: Optional[float] = Field(default=None, gt=0)
     BoxWeight: Optional[float] = Field(default=None, ge=0)
     MaximumBoxes: Optional[int] = Field(default=None, ge=1)
+
+    @field_validator("Reference")
+    @classmethod
+    def reference_url_safe(cls, value: str) -> str:
+        value = value.strip()
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", value):
+            raise ValueError("may only contain letters, numbers, '-' and '_'")
+        return value
+
+
 
 # Order box-type selection
 
@@ -264,10 +276,14 @@ class OrderResultOut(BaseModel):
 
 # Dashboard
 
+class DashboardRecentOrder(OrderOut):
+    items_count: int = 0  # physical items (sum of quantities)
+    boxes_count: int = 0  # box types allowed (selected) for the order
+
 class DashboardSummary(BaseModel):
     total_orders: int
     orders_by_status: dict[str, int]
-    recent_orders: list[OrderOut]
+    recent_orders: list[DashboardRecentOrder]
 
 
 # Integration status

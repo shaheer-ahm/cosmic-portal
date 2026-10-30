@@ -558,11 +558,20 @@ export function NewOrderPage() {
           ? error.message
           : "Failed to submit order.";
 
-      setIssues([
-        createdOrderId !== null
-          ? `Order ${createdOrderId} was created, but saving its details failed: ${message}. Check the Orders page before retrying.`
-          : message,
-      ]);
+      let issue = message;
+
+      if (createdOrderId !== null) {
+        try {
+          await apiFetch<void>(`/orders/${createdOrderId}`, {
+            method: "DELETE",
+          });
+          issue = `The order could not be saved: ${message}. Nothing was kept, fix the problem and submit again.`;
+        } catch {
+          issue = `Order ${createdOrderId} was created, but saving its details failed: ${message}. Check the Orders page before retrying.`;
+        }
+      }
+
+      setIssues([issue]);
 
       setSubmitted(false);
     } finally {

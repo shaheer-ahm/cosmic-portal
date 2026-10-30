@@ -60,6 +60,13 @@ export function CustomBoxForm({
       return;
     }
 
+    if (!/^[A-Z0-9_-]+$/.test(reference)) {
+      setError(
+        "Box references may only contain letters, numbers, - and _."
+      );
+      return;
+    }
+    
     if (!reference.startsWith("CUSTOM-")) {
       setError(
         "Custom box references must start with CUSTOM-. " +
