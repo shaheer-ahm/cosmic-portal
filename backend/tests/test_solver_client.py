@@ -1,5 +1,6 @@
 from types import SimpleNamespace
 import pytest
+from app import solver_client
 from app.solver_client import _box_type_payload, _item_payload
 from app.schemas import SolverBox, SolverPlacedItem
 
@@ -107,3 +108,66 @@ def test_solver_response_preserves_fragile_and_balance_fields():
     assert saved_data["Items"][0]["Fragile"] is True
     assert saved_data["CentreOfGravity"] == {"X": 50.0, "Y": 50.0, "Z": 50.0}
     assert saved_data["Balanced"] is True
+
+
+def test_call_solver_sends_api_key_header(monkeypatch):
+    item = SimpleNamespace(
+        ItemCode = "ITEM-001",
+        ItemReference = "Test item",
+        Width = 100,
+        Length = 100,
+        Depth = 100,
+        Weight = 1.0,
+        BoxGroup = None,
+        Quantity = 1,
+        KeepUpright = False,
+        Fragile = False,
+    )
+
+    box = SimpleNamespace(
+        Reference = "SML",
+        Width = 200,
+        Length = 200,
+        Depth = 200,
+        MaxWeight = 10.0,
+        BoxWeight = 0.5,
+        Active = True,
+        MaximumBoxes = 5,
+    )
+
+    captured_headers = {}
+
+    class FakeResponse:
+        status_code = 500
+        text = "Test response"
+
+        @staticmethod
+        def json():
+            return {"detail": "test response"}
+
+    def fake_post(
+            utl, *, json, headers, timeout,
+    ):
+        captured_headers.update(headers)
+        return FakeResponse()
+
+    monkeypatch.setattr(
+        solver_client,
+        "SOLVER_URL",
+        "https://solver.example",
+    )
+    monkeypatch.setattr(
+        solver_client,
+        "FITSOLVER_API_KEY",
+        "test-api-key"
+    )
+    monkeypatch.setattr(
+        solver_client.httpx,
+        "post",
+        fake_post,
+    )
+
+    with pytest.raises(solver_client.SolverError):
+        solver_client.call_solver([item], [box])
+
+    assert captured_headers["X-API-Key"] == "test-api-key"

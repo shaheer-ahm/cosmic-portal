@@ -78,7 +78,7 @@ The production frontend is deployed on Render:
 
 https://cosmic-portal-frontend.onrender.com
 
-Pushes to the 'frontend' branch run the GitHub Actions workflow in
+Pushes to the 'main' branch run the GitHub Actions workflow in
 `.github/workflows/ci.yml`. Render deploys the site only after the CI checks
 pass successfully.
 
@@ -88,7 +88,7 @@ pass successfully.
 repository:
 
 ```json
-"@comp4050-fiv/visualizer": "file:vendor/comp4050-fiv-visualizer-0.1.1.tgz"
+"@comp4050-fiv/visualizer": "file:vendor/comp4050-fiv-visualizer-0.1.3.tgz"
 ```
 
 Everyone — including a fresh clone and any CI job — gets the identical build
@@ -101,7 +101,7 @@ The visualizer team publishes each release as a `.tgz` attached to a GitHub
 Release (or hands one over directly). To upgrade:
 
 ```bash
-rm vendor/comp4050-fiv-visualizer-0.1.1.tgz
+rm vendor/comp4050-fiv-visualizer-0.1.3.tgz
 cp ~/Downloads/comp4050-fiv-visualizer-0.2.0.tgz vendor/
 npm install ./vendor/comp4050-fiv-visualizer-0.2.0.tgz
 ```

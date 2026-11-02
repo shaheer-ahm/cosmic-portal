@@ -161,10 +161,12 @@ DATABASE_URL=postgresql://<database-connection-string>
 
 SUPABASE_URL=https://<project-ref>.supabase.co
 SUPABASE_ANON_KEY=<supabase-publishable-key>
+SUPABASE_SECRET_KEY=<supabase-server-secret-key>
 
 SOLVER_URL=https://<solver-host>
 FITSOLVER_API_KEY=<solver-api-key>
 
+PASSWORD_RESET_REDIRECT_URL=http://localhost:5173/reset-password
 ALLOWED_ORIGINS=http://localhost:5173
 ```
 
