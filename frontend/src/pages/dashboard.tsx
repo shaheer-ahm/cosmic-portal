@@ -202,7 +202,7 @@ export function DashboardPage() {
           </div>
           <div className="flex h-3 overflow-hidden rounded-full bg-[#edf1f6]" aria-label="Proportions of draft, validated, processing, and completed orders">
             {distribution.map((stage, index) => (
-              <motion.div key={stage.key} initial={reduceMotion ? false : { flexGrow: 0 }} animate={{ flexGrow: stage.value }} transition={{ delay: reduceMotion ? 0 : 0.15 + index * 0.1, duration: reduceMotion ? 0 : 0.65 }} style={{ backgroundColor: stage.color, flexBasis: 0, minWidth: 0 }} />
+              <motion.div key={stage.key} initial={reduceMotion ? false : { flexGrow: 0 }} animate={{ flexGrow: stage.value }} transition={{ delay: reduceMotion ? 0 : 0.15 + index * 0.1, duration: reduceMotion ? 0 : 1.6 }} style={{ backgroundColor: stage.color, flexBasis: 0, minWidth: 0 }} />
             ))}
           </div>
           <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2">

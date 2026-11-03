@@ -22,7 +22,7 @@ export function AnimatedNumber({
     if (reduceMotion) return;
 
     const controls = animate(0, value, {
-      duration: 0.9,
+      duration: 1.0,
       ease: "easeOut",
       onUpdate: setDisplay,
     });
