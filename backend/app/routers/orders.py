@@ -1,3 +1,6 @@
+import os
+import threading
+
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -10,6 +13,11 @@ from app.solver_client import call_solver, SolverError
 
 router = APIRouter(prefix="/api/v1/orders", tags=["orders"])
 
+# Load limit: at most this many optimisations can run at the same time.
+# Request MAX_CONCURRENT_OPTIMISATIONS + 1 is turned away with a 503 
+# and can simply be retried later.
+MAX_CONCURRENT_OPTIMISATIONS = int(os.getenv("MAX_CONCURRENT_OPTIMISATIONS", "10"))
+_optimisation_slots = threading.BoundedSemaphore(MAX_CONCURRENT_OPTIMISATIONS)
 
 @router.get("/", response_model=list[schemas.OrderSummaryOut])
 def list_orders(db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
@@ -330,30 +338,44 @@ def optimise_order(
             status_code=400,
             detail="None of this order's selected box types are currently active",
         )
-    
-    order.status = "processing"
-    db.commit()
+
+    if not _optimisation_slots.acquire(blocking=False):
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                f"The optimiser is busy ({MAX_CONCURRENT_OPTIMISATIONS} orders are already "
+                "being optimised). Please try again in a minute."
+            ),
+            headers={"Retry-After": "60"},
+        )
 
     try:
-        result = call_solver(items, box_types, request_id=f"portal-order-{order_id}-{uuid4()}")
-    except SolverError as exc:
-        # Roll back to 'validated' so the order can be retried rather than
-        # left stuck in 'processing'.
-        order.status = "validated"
+        order.status = "processing"
         db.commit()
-        raise HTTPException(status_code=502, detail=f"FitSolver call failed: {exc}")
 
-    existing_result = (
-        db.query(models.OrderResult).filter(models.OrderResult.order_id == order_id).first()
-    )
-    result_dict = result.model_dump(mode="json")
-    if existing_result:
-        existing_result.result_data = result_dict
-    else:
-        db.add(models.OrderResult(order_id=order_id, result_data=result_dict))
+        try:
+            result = call_solver(items, box_types, request_id=f"portal-order-{order_id}-{uuid4()}")
+        except SolverError as exc:
+            # Roll back to 'validated' so the order can be retried rather than
+            # left stuck in 'processing'.
+            order.status = "validated"
+            db.commit()
+            raise HTTPException(status_code=502, detail=f"FitSolver call failed: {exc}")
 
-    order.status = "completed"
-    db.commit()
+        existing_result = (
+            db.query(models.OrderResult).filter(models.OrderResult.order_id == order_id).first()
+        )
+        result_dict = result.model_dump(mode="json")
+        if existing_result:
+            existing_result.result_data = result_dict
+        else:
+            db.add(models.OrderResult(order_id=order_id, result_data=result_dict))
+
+        order.status = "completed"
+        db.commit()
+
+    finally:
+        _optimisation_slots.release()
 
     message = (
         "Optimisation completed successfully."
