@@ -378,7 +378,7 @@ export function ResultPage() {
     <AppShell>
       <PageHeader
         title={orderRef} 
-        backTo="/dashboard"
+        backTo="/orders"
         right={<StatusBadge status={displayStatus} />}
       />
 
